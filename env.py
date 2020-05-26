@@ -1,3 +1,4 @@
+import random
 import sys
 from ICRSsimulator import *
 import numpy as np
@@ -41,8 +42,11 @@ class Env:
         self.visited = np.ones([rows, cols])
         self.cached_points = []
 
-        self.row_position = 0
-        self.col_position = 0
+        self.start_row = 0
+        self.start_col = 0
+
+        self.row_position = self.start_row
+        self.col_position = self.start_col
 
         # for clarity maybe set constants as reward weights up here?
         # if keeping track of exact rotation, a sharp turn could also have a penalty
@@ -53,23 +57,30 @@ class Env:
         self.BATTERY_PENALTY = -100
 
     def reset(self):
+        # reset visited states
         self.visited = np.ones_like(self.visited)
+
+        # reset battery to 100
         self.battery = 100
 
         # clear cached points however you would do that
 
-        self.row_position = 0
-        self.col_position = 0
+        # randomize starting position
+        self.start_row = random.randint(0,261)
+        self.start_col = random.randint(0,243)
 
+        self.row_position = self.start_row
+        self.col_position = self.start_col
 
     def step(self, action):
+        done = False
         # need to add controls for reaching the edge of the region
         # These are overly simplified discrete actions, will want to make this continuous at some point
-        if action == 0 and self.row_position < 267:  # Forward one grid
+        if action == 0 and self.row_position < 261:  # Forward one grid
             self.sim.setDroneImgSize(6, 6)
             next_row = self.row_position + 1
             next_col = self.col_position
-        elif action == 1 and self.col_position < 249:  # right one grid
+        elif action == 1 and self.col_position < 243:  # right one grid
             self.sim.setDroneImgSize(6, 6)
             next_row = self.row_position
             next_col = self.col_position + 1
@@ -90,13 +101,6 @@ class Env:
 
         classifiedImage = self.sim.getClassifiedDroneImageAt(next_row, next_col)
 
-
-        #fig, axs = plt.subplots(1, len(classifiedImage.shape))
-        #for k in range(0, len(classifiedImage.shape)):
-            #axs[k].imshow(classifiedImage[:, :, k], cmap='gray', interpolation='none')
-
-        #plt.show()
-
         self.row_position = next_row
         self.col_position = next_col
 
@@ -107,7 +111,14 @@ class Env:
 
         self.visited_position()
 
-        return classifiedImage, next_row, next_col, reward
+        # End if battery dies
+        # To end if returns to start position after so many steps add:
+        # or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80)
+        # (right now I am just using battery level since it decreases per time step but we can make this more sophisticated)
+        if self.battery <= 0:
+            done = True
+
+        return classifiedImage, next_row, next_col, reward, done
 
     def get_reward(self, classifiedImage):
         # decompose state for probabilities, then multiply for given rewards
@@ -136,14 +147,22 @@ class Env:
     def battery_loss(self):
         # can set this however we want the battery to deplete
         # change battery more significantly if change direction
-        self.battery = self.battery - .01
+        self.battery = self.battery - .05
 
     def visited_position(self):
         # Two options: either count just the current, or count everything in it's field of vision
         self.visited[self.row_position, self.col_position] = 0
 
+
+        for i in range(5):
+            for j in range(5):
+                self.visited[self.row_position + i, self.col_position + j] *= .9
+
+
+
     def plot_visited(self):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
+        plt.title("Drone Path")
         plt.show()
 
     def save_cached_point(self, row, col):
