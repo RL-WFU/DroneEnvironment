@@ -72,7 +72,7 @@ class Env:
         self.row_position = self.start_row
         self.col_position = self.start_col
 
-    def step(self, action):
+    def step(self, action, last_action):
         done = False
         # need to add controls for reaching the edge of the region
         # These are overly simplified discrete actions, will want to make this continuous at some point
@@ -104,7 +104,7 @@ class Env:
         self.row_position = next_row
         self.col_position = next_col
 
-        self.battery_loss()
+        self.battery_loss(action, last_action)
         print("Battery:", self.battery)
 
         reward = self.get_reward(classifiedImage)
@@ -115,7 +115,7 @@ class Env:
         # To end if returns to start position after so many steps add:
         # or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80)
         # (right now I am just using battery level since it decreases per time step but we can make this more sophisticated)
-        if self.battery <= 0:
+        if self.battery <= 0 or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80):
             done = True
 
         return classifiedImage, next_row, next_col, reward, done
@@ -144,27 +144,30 @@ class Env:
 
     # Maybe make an Agent class for battery, visited points, cached points, ect
 
-    def battery_loss(self):
+    def battery_loss(self, action, last_action):
         # can set this however we want the battery to deplete
         # change battery more significantly if change direction
-        self.battery = self.battery - .05
+        # auxiliary neural net to optimize battery function
+        self.battery -= .05
+
+        if action != last_action:
+            self.battery -= .05
 
     def visited_position(self):
         # Two options: either count just the current, or count everything in it's field of vision
         self.visited[self.row_position, self.col_position] = 0
 
-
         for i in range(5):
             for j in range(5):
                 self.visited[self.row_position + i, self.col_position + j] *= .9
-
-
 
     def plot_visited(self):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
         plt.title("Drone Path")
         plt.show()
 
+
+    '''
     def save_cached_point(self, row, col):
         cached_point = (row, col)
         self.cached_points.append(cached_point)
@@ -176,6 +179,7 @@ class Env:
         # Consider comparing to just using GRU
         cached_point = self.cached_points[0]
         return cached_point
+    '''
 
 
 
