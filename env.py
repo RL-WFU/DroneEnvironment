@@ -151,7 +151,7 @@ class Env:
         self.battery -= .05
 
         if action != last_action:
-            self.battery -= .05
+            self.battery -= .01
 
     def visited_position(self):
         # Two options: either count just the current, or count everything in it's field of vision
