@@ -5,9 +5,9 @@ import numpy as np
 
 
 class Env:
-    def __init__(self):
+    def __init__(self, config):
         # Create simulator object and load the image
-        self.sim = ICRSsimulator('sample12x12km2.jpg')
+        self.sim = ICRSsimulator(config.env_image)
         if self.sim.loadImage() == False:
             print("Error: could not load image")
             sys.exit(0)
@@ -38,6 +38,8 @@ class Env:
         self.sim.setMapSize(rows, cols)
         self.sim.createMap()
 
+        self.num_actions = 4
+
         self.battery = 100
         self.visited = np.ones([rows, cols])
         self.cached_points = []
@@ -53,8 +55,9 @@ class Env:
         self.MINING_REWARD = 100
         self.FOREST_REWARD = 0
         self.WATER_REWARD = 30
+        self.RETURN_REWARD = 100
         self.TIMESTEP_PENALTY = -1
-        self.BATTERY_PENALTY = -100
+        self.BATTERY_PENALTY = -1000
 
     def reset(self):
         # reset visited states
@@ -72,8 +75,8 @@ class Env:
         self.row_position = self.start_row
         self.col_position = self.start_col
 
-    def step(self, action, last_action):
-        done = False
+    def step(self, action):
+        self.done = False
         # need to add controls for reaching the edge of the region
         # These are overly simplified discrete actions, will want to make this continuous at some point
         if action == 0 and self.row_position < 261:  # Forward one grid
@@ -96,7 +99,6 @@ class Env:
             next_row = self.row_position
             next_col = self.col_position
 
-
         navMapSize = self.sim.setNavigationMap()
 
         classifiedImage = self.sim.getClassifiedDroneImageAt(next_row, next_col)
@@ -104,7 +106,7 @@ class Env:
         self.row_position = next_row
         self.col_position = next_col
 
-        self.battery_loss(action, last_action)
+        self.battery_loss(action)
         print("Battery:", self.battery)
 
         reward = self.get_reward(classifiedImage)
@@ -116,21 +118,20 @@ class Env:
         # or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80)
         # (right now I am just using battery level since it decreases per time step but we can make this more sophisticated)
         if self.battery <= 0 or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80):
-            done = True
+            self.done = True
 
-        return classifiedImage, next_row, next_col, reward, done
+        return classifiedImage, reward, self.done
 
     def get_reward(self, classifiedImage):
-        # decompose state for probabilities, then multiply for given rewards
-        # are the rewards only for the exact box we're in or added for the entire range?
-        # I kind of think it makes the most sense to reward only for the current spot
-        # but it can see the other spots and know to go in that direction? I'm not sure exactly how that would work though
 
         battery_dead = False
-        if self.battery <= 0:
-            battery_dead = True
+        returned_to_start = False
+        if self.done:
+            if self.battery <= 0:
+                battery_dead = True
+            else:
+                returned_to_start = True
 
-        # If we don't want just the one position, then we can iterate over classifiedImage, adding all of each class
         mining_prob = classifiedImage[0,0,0]
         forest_prob = classifiedImage[0,0,1]
         water_prob = classifiedImage[0,0,2]
@@ -139,19 +140,18 @@ class Env:
 
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
-        reward += self.BATTERY_PENALTY*battery_dead + self.TIMESTEP_PENALTY
+        reward += self.BATTERY_PENALTY*battery_dead + self.TIMESTEP_PENALTY + self.RETURN_REWARD*returned_to_start
         return reward
 
-    # Maybe make an Agent class for battery, visited points, cached points, ect
-
-    def battery_loss(self, action, last_action):
+    def battery_loss(self, action):
         # can set this however we want the battery to deplete
-        # change battery more significantly if change direction
         # auxiliary neural net to optimize battery function
-        self.battery -= .05
 
-        if action != last_action:
+        # battery depletes less when hovering
+        if action == 4:
             self.battery -= .01
+        else:
+            self.battery -= .05
 
     def visited_position(self):
         # Two options: either count just the current, or count everything in it's field of vision
@@ -165,6 +165,10 @@ class Env:
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
         plt.title("Drone Path")
         plt.show()
+
+    def getClassifiedDroneImage(self):
+        image = self.sim.getClassifiedDroneImageAt(self.row_position, self.col_position)
+        return image
 
 
     '''
