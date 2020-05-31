@@ -1,8 +1,9 @@
 import random
+from DRQN.config import *
 
 from env import *
-
-env = Env()
+config = Config
+env = Env(config)
 
 # generate a random policy from the 5 possible actions (left, right, up, down, don't move)
 # we can set the number of steps/ terminal state based on how we set up the problem
@@ -11,18 +12,15 @@ for i in range(5000):
     a = random.randint(0, 4)
     actions.append(a)
 
-print(actions)
-
 # follow an episode under this policy
 total_reward = 0
 done = False
 i = 0
 while not done and i < 5000:
     a = actions[i]
-    classifiedImage, next_row, next_col, reward, done = env.step(action=a)
+    classifiedImage, reward, done = env.step(action=a)
     total_reward += reward
     print("Action:", a)
-    print("New Position:", next_row, ",", next_col)
     print("Reward:", reward)
 
     print("==========================")

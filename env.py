@@ -33,19 +33,19 @@ class Env:
         # Number of rows and colums of the map at the finest scale of classification
         # Each (i,j) position in the map is a 1-D array of classification likelihoods
         # of length given by the number of classes
-        rows = 268
-        cols = 250
-        self.sim.setMapSize(rows, cols)
+        self.totalRows = 268
+        self.totalCols = 250
+        self.sim.setMapSize(self.totalRows, self.totalCols)
         self.sim.createMap()
 
         self.num_actions = 4
 
         self.battery = 100
-        self.visited = np.ones([rows, cols])
+        self.visited = np.ones([self.totalRows, self.totalCols])
         self.cached_points = []
 
-        self.start_row = 0
-        self.start_col = 0
+        self.start_row = 2
+        self.start_col = 2
 
         self.row_position = self.start_row
         self.col_position = self.start_col
@@ -69,8 +69,8 @@ class Env:
         # clear cached points however you would do that
 
         # randomize starting position
-        self.start_row = random.randint(0,261)
-        self.start_col = random.randint(0,243)
+        self.start_row = random.randint(2,266)
+        self.start_col = random.randint(2,248)
 
         self.row_position = self.start_row
         self.col_position = self.start_col
@@ -79,29 +79,27 @@ class Env:
         self.done = False
         # need to add controls for reaching the edge of the region
         # These are overly simplified discrete actions, will want to make this continuous at some point
-        if action == 0 and self.row_position < 261:  # Forward one grid
-            self.sim.setDroneImgSize(6, 6)
+        if action == 0 and self.row_position < (self.totalRows - self.sim.droneImgSize['rows'] - 1):  # Forward one grid
             next_row = self.row_position + 1
             next_col = self.col_position
-        elif action == 1 and self.col_position < 243:  # right one grid
-            self.sim.setDroneImgSize(6, 6)
+        elif action == 1 and self.col_position < (self.totalCols - self.sim.droneImgSize['cols'] - 1):  # right one grid
             next_row = self.row_position
             next_col = self.col_position + 1
-        elif action == 2 and self.row_position > 0:  # back one grid
-            self.sim.setDroneImgSize(6, 6)
+        elif action == 2 and self.row_position > self.sim.droneImgSize['rows']:  # back one grid
             next_row = self.row_position - 1
             next_col = self.col_position
-        elif action == 3 and self.col_position > 0:  # left one grid
-            self.sim.setDroneImgSize(6, 6)
+        elif action == 3 and self.col_position > self.sim.droneImgSize['cols']:  # left one grid
             next_row = self.row_position
             next_col = self.col_position - 1
         else:
             next_row = self.row_position
             next_col = self.col_position
 
+        self.sim.setDroneImgSize(2, 2)
         navMapSize = self.sim.setNavigationMap()
 
         classifiedImage = self.sim.getClassifiedDroneImageAt(next_row, next_col)
+        print(classifiedImage.shape)
 
         self.row_position = next_row
         self.col_position = next_col
@@ -132,9 +130,9 @@ class Env:
             else:
                 returned_to_start = True
 
-        mining_prob = classifiedImage[0,0,0]
-        forest_prob = classifiedImage[0,0,1]
-        water_prob = classifiedImage[0,0,2]
+        mining_prob = classifiedImage[2,2,0]
+        forest_prob = classifiedImage[2,2,1]
+        water_prob = classifiedImage[2,2,2]
 
         print(mining_prob, forest_prob, water_prob)
 

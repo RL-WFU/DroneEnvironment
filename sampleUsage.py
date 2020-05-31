@@ -44,19 +44,20 @@ sim.showMap()
 
 # Set the size of the drone image in terms of number of elements in
 # the map.
-sim.setDroneImgSize(6, 6)
+sim.setDroneImgSize(2, 2)
 
 # Create the navigation map for the drone
 navMapSize = sim.setNavigationMap()
 print(navMapSize)
 
 # Get sample drone image classifications
-classifiedImage = sim.getClassifiedDroneImageAt(0,0)
+classifiedImage = sim.getClassifiedDroneImageAt(3,3)
 print(classifiedImage.shape)
 fig, axs = plt.subplots(1, len(classifiedImage.shape))
 for k in range(0, len(classifiedImage.shape)):
 	axs[k].imshow(classifiedImage[:,:,k], cmap = 'gray', interpolation = 'none')
 plt.show()
+
 
 classifiedImage = sim.getClassifiedDroneImageAt(navMapSize[0] - 1, navMapSize[1] - 1)
 print(classifiedImage.shape)
@@ -64,3 +65,4 @@ fig, axs = plt.subplots(1, len(classifiedImage.shape))
 for k in range(0, len(classifiedImage.shape)):
 	axs[k].imshow(classifiedImage[:,:,k], cmap = 'gray', interpolation = 'none')
 plt.show()
+
