@@ -117,6 +117,11 @@ class Env:
         # (right now I am just using battery level since it decreases per time step but we can make this more sophisticated)
         if self.battery <= 0 or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80):
             self.done = True
+        print(classifiedImage)
+        # print("Old Shape:", classifiedImage.shape)
+        classifiedImage = self.flatten_state(classifiedImage)
+        # print("New Shape:", classifiedImage.shape)
+        print(classifiedImage)
 
         return classifiedImage, reward, self.done
 
@@ -166,8 +171,12 @@ class Env:
 
     def getClassifiedDroneImage(self):
         image = self.sim.getClassifiedDroneImageAt(self.row_position, self.col_position)
+        image = self.flatten_state(image)
         return image
 
+    def flatten_state(self, state):
+        flat_state = state.reshape(25, 3)
+        return flat_state
 
     '''
     def save_cached_point(self, row, col):

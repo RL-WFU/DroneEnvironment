@@ -6,13 +6,13 @@ import os
 class ReplayMemory:
 
     def __init__(self, config):
-        super(ReplayMemory, self).__init__(config)
+        # super(ReplayMemory, self).__init__(config)
         self.config = config
         self.actions = np.empty(self.config.mem_size, dtype=np.int32)
         self.rewards = np.empty(self.config.mem_size, dtype=np.int32)
         # Screens are dtype=np.uint8 which saves massive amounts of memory, however the network expects state inputs
         # to be dtype=np.float32. Remember this every time you feed something into the network
-        self.images = np.empty((self.config.mem_size, self.config.view_height, self.config.view_width), dtype=np.uint8)
+        self.images = np.empty((self.config.mem_size, self.config.image_size, self.config.num_classes), dtype=np.uint8)
         self.terminals = np.empty((self.config.mem_size,), dtype=np.float16)
         self.count = 0
         self.current = 0
@@ -23,7 +23,7 @@ class ReplayMemory:
 
         self.timesteps = np.empty(self.config.mem_size, dtype=np.int32)
         self.states = np.empty((self.config.batch_size, self.config.min_history + self.config.states_to_update + 1,
-                                self.config.view_height, self.config.view_width), dtype=np.uint8)
+                                self.config.image_size, self.config.num_classes), dtype=np.uint8)
         self.actions_out = np.empty(
             (self.config.batch_size, self.config.min_history + self.config.states_to_update + 1))
         self.rewards_out = np.empty(
@@ -44,7 +44,7 @@ class ReplayMemory:
         self.terminals = np.load(self.dir_save + "terminals.npy")
 
     def add(self, image, reward, action, terminal, t):
-        assert image.shape == (self.config.screen_height, self.config.screen_width)
+        assert image.shape == (self.config.image_size, self.config.num_classes)
 
         self.actions[self.current] = action
         self.rewards[self.current] = reward

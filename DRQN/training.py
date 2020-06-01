@@ -2,12 +2,13 @@ from env import *
 from DRQN.config import *
 from DRQN.agent import *
 
-environment = Env()
+
 num_episodes = 100
 max_steps = 5000
 
 conf = Config()
-conf.env_image = 'sample12x12km2.jpg'
+conf.env_image = '../sample12x12km2.jpg'
+environment = Env(conf)
 
 agent = Agent(conf, environment)
 

@@ -18,7 +18,7 @@ class DRQN():
 
     def __init__(self, config, num_actions):
 
-        super(DRQN, self).__init__(config, "drqn")
+        # super(DRQN, self).__init__(config, "drqn")
         self.num_actions = num_actions
         self.num_lstm_layers = config.num_lstm_layers
         self.lstm_size = config.lstm_size

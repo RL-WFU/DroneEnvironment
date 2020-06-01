@@ -33,3 +33,4 @@ class Config(object):
     env_image = 'sample12x12km2.jpg'
     image_size = 25
     num_classes = 3
+    mem_size = 32
