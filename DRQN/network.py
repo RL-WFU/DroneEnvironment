@@ -20,7 +20,6 @@ class DRQN():
 
         super(DRQN, self).__init__(config, "drqn")
         self.num_actions = num_actions
-        self.cnn_format = config.cnn_format
         self.num_lstm_layers = config.num_lstm_layers
         self.lstm_size = config.lstm_size
         self.min_history = config.min_history
