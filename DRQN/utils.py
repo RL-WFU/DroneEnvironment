@@ -64,7 +64,7 @@ def conv2d_layer(x, output_dim, kernel_size, stride, initializer=None, padding="
 def fully_connected_layer(x, output_dim, scope_name="fully", initializer=tf.random_normal_initializer(stddev=0.02),
                           activation=tf.nn.relu):
     shape = x.get_shape().as_list()
-    with tf.variable_scope(scope_name):
+    with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE):
         w = tf.get_variable("w", [shape[1], output_dim], dtype=tf.float32,
                             initializer=initializer)
         b = tf.get_variable("b", [output_dim], dtype=tf.float32,
@@ -73,7 +73,7 @@ def fully_connected_layer(x, output_dim, scope_name="fully", initializer=tf.rand
         if activation is not None:
             out = activation(out)
 
-        return w, b, out
+        return out
 
 def stateful_lstm(x, num_layers, lstm_size, state_input, scope_name="lstm"):
     with tf.variable_scope(scope_name):

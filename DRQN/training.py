@@ -3,7 +3,7 @@ from DRQN.config import *
 from DRQN.agent import *
 
 
-num_episodes = 100
+num_episodes = 1000
 max_steps = 5000
 
 conf = Config()

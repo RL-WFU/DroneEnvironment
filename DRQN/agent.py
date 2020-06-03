@@ -15,7 +15,7 @@ class Agent:
         self.epsilon = config.epsilon_start
         self.replay_memory = ReplayMemory(config)
         self.history = None
-        self.net = DRQN(self.env.num_actions, config)
+        self.net = DRQN(config, self.env.num_actions)
         self.net.build()
         self.net.add_summary(
             ["average_reward", "average_loss", "average_q", "ep_max_reward", "ep_min_reward", "ep_num_game",
@@ -35,14 +35,21 @@ class Agent:
 
     def get_action(self, state):
         if np.random.rand() < self.epsilon:
-            return np.random.rand(0, self.env.num_actions)
+            a = np.random.randint(0, self.env.num_actions)
+            # print("random:", a)
+            # print("epsilon:", self.epsilon)
+            return a
         else:
+            '''
             a, self.lstm_state_c, self.lstm_state_h = self.net.sess.run(
                 [self.net.q_action, self.net.state_output_c, self.net.state_output_h], {
                     self.net.state: [[state]],
                     self.net.c_state_train: self.lstm_state_c,
                     self.net.h_state_train: self.lstm_state_h
                 })
+            '''
+            a = self.net.sess.run(self.net.q_action, {self.net.state: state})
+            # print("a:", a)
             return a[0]
 
     def train(self, max_steps, num_episodes):
@@ -53,7 +60,7 @@ class Agent:
         self.total_loss, self.total_q = 0., 0.
         self.update_count = 0
 
-        for self.episode_i in tqdm(range(num_episodes)):
+        for self.episode_i in range(num_episodes):
             # Reset the environment and pick the first action
             self.env.reset()
 
@@ -70,6 +77,7 @@ class Agent:
             for t in range(max_steps):
                 # Choose an action and take a step in the env
                 action = self.get_action(state)
+                # print(action)
                 next_state, reward, done = self.env.step(action)
 
                 # Keep track of action and transition
@@ -84,7 +92,7 @@ class Agent:
                 self.replay_memory.add(next_state, reward, action, done, t)
 
                 # decrease epsilon
-                if self.episode_i < self.config.epsilon_decay_episodes:
+                if self.episode_i < self.config.epsilon_decay_episodes and (self.epsilon >= self.config.epsilon_decay + self.config.epsilon_end):
                     self.epsilon -= self.config.epsilon_decay
 
                 # train the DRQN
@@ -107,9 +115,10 @@ class Agent:
 
             data = collections.Counter(actions)
             most_common_actions.append(data.most_common(1))
-            print("Episode {} finished. Reward: {}. Steps: {}. Most Common Action: {}".format(self.episode_i,
+            print("Episode {} finished. Reward: {}. Steps: {}. Epsilon: {}. Most Common Action: {}".format(self.episode_i,
                                                                                               episode_rewards[self.episode_i],
                                                                                               episode_lengths[self.episode_i],
+                                                                                              self.epsilon,
                                                                                               most_common_actions[self.episode_i]))
         plt.plot(episode_rewards)
         plt.ylabel('Episode reward')

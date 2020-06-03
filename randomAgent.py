@@ -16,6 +16,7 @@ for i in range(5000):
 total_reward = 0
 done = False
 i = 0
+state = env.getClassifiedDroneImage()
 while not done and i < 5000:
     a = actions[i]
     classifiedImage, reward, done = env.step(action=a)

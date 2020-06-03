@@ -8,9 +8,9 @@ class Config(object):
     epsilon_start = 1.0
     epsilon_end = 0.02
     max_steps = 10000
-    epsilon_decay_episodes = 1000000
+    epsilon_decay_episodes = 1000
     train_freq = 8
-    update_freq = 10000
+    update_freq = 250
     train_start = 20000
     dir_save = "saved_session/"
     epsilon_decay = float((epsilon_start - epsilon_end))/float(epsilon_decay_episodes)

@@ -52,9 +52,9 @@ class Env:
 
         # for clarity maybe set constants as reward weights up here?
         # if keeping track of exact rotation, a sharp turn could also have a penalty
-        self.MINING_REWARD = 100
+        self.MINING_REWARD = 300
         self.FOREST_REWARD = 0
-        self.WATER_REWARD = 30
+        self.WATER_REWARD = 90
         self.RETURN_REWARD = 100
         self.TIMESTEP_PENALTY = -1
         self.BATTERY_PENALTY = -1000
@@ -69,8 +69,8 @@ class Env:
         # clear cached points however you would do that
 
         # randomize starting position
-        self.start_row = random.randint(2,266)
-        self.start_col = random.randint(2,248)
+        self.start_row = random.randint(2,265)
+        self.start_col = random.randint(2,247)
 
         self.row_position = self.start_row
         self.col_position = self.start_col
@@ -99,13 +99,13 @@ class Env:
         navMapSize = self.sim.setNavigationMap()
 
         classifiedImage = self.sim.getClassifiedDroneImageAt(next_row, next_col)
-        print(classifiedImage.shape)
+        # print(classifiedImage.shape)
 
         self.row_position = next_row
         self.col_position = next_col
 
-        self.battery_loss(action)
-        print("Battery:", self.battery)
+        # self.battery_loss(action)
+        # print("Battery:", self.battery)
 
         reward = self.get_reward(classifiedImage)
 
@@ -117,11 +117,11 @@ class Env:
         # (right now I am just using battery level since it decreases per time step but we can make this more sophisticated)
         if self.battery <= 0 or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80):
             self.done = True
-        print(classifiedImage)
+
         # print("Old Shape:", classifiedImage.shape)
         classifiedImage = self.flatten_state(classifiedImage)
         # print("New Shape:", classifiedImage.shape)
-        print(classifiedImage)
+
 
         return classifiedImage, reward, self.done
 
@@ -139,7 +139,7 @@ class Env:
         forest_prob = classifiedImage[2,2,1]
         water_prob = classifiedImage[2,2,2]
 
-        print(mining_prob, forest_prob, water_prob)
+       # print(mining_prob, forest_prob, water_prob)
 
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
@@ -160,9 +160,9 @@ class Env:
         # Two options: either count just the current, or count everything in it's field of vision
         self.visited[self.row_position, self.col_position] = 0
 
-        for i in range(5):
-            for j in range(5):
-                self.visited[self.row_position + i, self.col_position + j] *= .9
+        for i in range(4):
+            for j in range(4):
+                self.visited[self.row_position + i - 2, self.col_position + j - 2] *= .9
 
     def plot_visited(self):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
@@ -170,6 +170,8 @@ class Env:
         plt.show()
 
     def getClassifiedDroneImage(self):
+        self.sim.setDroneImgSize(2, 2)
+        navMapSize = self.sim.setNavigationMap()
         image = self.sim.getClassifiedDroneImageAt(self.row_position, self.col_position)
         image = self.flatten_state(image)
         return image
