@@ -212,7 +212,7 @@ class DRQN():
         self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=256)
         self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=64)
 
-
+        '''
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_train")
         self.state_output_target_c = state[0][0]
@@ -226,7 +226,7 @@ class DRQN():
         self.w_target["wout"] = w
         self.w_target["bout"] = b
 
-
+        '''
         self.out = tf.contrib.layers.fully_connected(inputs=self.dense2, num_outputs=self.num_actions,
                                                      activation_fn=None)
 
