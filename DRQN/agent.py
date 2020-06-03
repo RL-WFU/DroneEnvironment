@@ -37,20 +37,31 @@ class Agent:
         if np.random.rand() < self.epsilon:
             a = np.random.randint(0, self.env.num_actions)
             # print("random:", a)
-            # print("epsilon:", self.epsilon)
             return a
         else:
-            '''
+            #print("state:", state.shape)
+            #print("state_train:", self.net.h_state_train.shape)
+            #print("lstm state:", self.lstm_state_h.shape)
             a, self.lstm_state_c, self.lstm_state_h = self.net.sess.run(
                 [self.net.q_action, self.net.state_output_c, self.net.state_output_h], {
-                    self.net.state: [[state]],
+                    self.net.state: state,
                     self.net.c_state_train: self.lstm_state_c,
                     self.net.h_state_train: self.lstm_state_h
                 })
-            '''
-            a = self.net.sess.run(self.net.q_action, {self.net.state: state})
+
+            # a = self.net.sess.run(self.net.q_action, {self.net.state: state})
             # print("a:", a)
-            return a[0]
+            action = a[0]
+            return action
+
+    def get_last_t_states(self, t, episode):
+        states = []
+        for i, transition in enumerate(episode[-t:]):
+            states.append(transition.state)
+
+        states = np.asarray(states)
+        states = np.reshape(states, [1, t, self.config.image_size * 3])
+        return states
 
     def train(self, max_steps, num_episodes):
         Transition = collections.namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
@@ -75,8 +86,12 @@ class Agent:
             self.lstm_state_c, self.lstm_state_h = self.net.initial_zero_state_single, self.net.initial_zero_state_single
 
             for t in range(max_steps):
+                if t < self.config.sequence_length:
+                    action = np.random.randint(0, 4)
                 # Choose an action and take a step in the env
-                action = self.get_action(state)
+                else:
+                    states = self.get_last_t_states(self.config.sequence_length, episode)
+                    action = self.get_action(states)
                 # print(action)
                 next_state, reward, done = self.env.step(action)
 
@@ -120,6 +135,7 @@ class Agent:
                                                                                               episode_lengths[self.episode_i],
                                                                                               self.epsilon,
                                                                                               most_common_actions[self.episode_i]))
+            #self.env.plot_visited()
         plt.plot(episode_rewards)
         plt.ylabel('Episode reward')
         plt.xlabel('Episode')

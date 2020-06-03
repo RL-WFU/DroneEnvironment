@@ -73,13 +73,14 @@ def fully_connected_layer(x, output_dim, scope_name="fully", initializer=tf.rand
         if activation is not None:
             out = activation(out)
 
-        return out
+        return w, b, out
 
 def stateful_lstm(x, num_layers, lstm_size, state_input, scope_name="lstm"):
-    with tf.variable_scope(scope_name):
+    with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE):
         cell = tf.nn.rnn_cell.LSTMCell(lstm_size, state_is_tuple=True)
         cell = tf.nn.rnn_cell.MultiRNNCell([cell]*num_layers, state_is_tuple=True)
-        outputs, state = tf.nn.dynamic_rnn(cell, x, initial_state=state_input)
+        initial_state = cell.zero_state(batch_size=1, dtype=tf.float32)
+        outputs, state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state)
         return outputs, state
 
 

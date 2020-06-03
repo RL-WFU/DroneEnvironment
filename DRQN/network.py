@@ -45,6 +45,8 @@ class DRQN():
         self.train_steps = 0
         self.is_training = False
 
+        self.sequence_length = 6
+
     def add_train_op(self, lr_method, lr, loss, clip=-1):
         _lr_m = lr_method.lower()  # lower to make sure
 
@@ -104,12 +106,12 @@ class DRQN():
     def add_placeholders(self):
         self.w = {}
         self.w_target = {}
-        self.state = tf.placeholder(tf.float32, shape=[self.image_size, self.num_classes],
+        self.state = tf.placeholder(tf.float32, shape=[None, self.sequence_length, self.image_size * self.num_classes],
                                     name="input_state")
         self.action = tf.placeholder(tf.int32, shape=[None], name="action_input")
         self.reward = tf.placeholder(tf.int32, shape=[None], name="reward")
         self.state_target = tf.placeholder(tf.float32,
-                                           shape=[None, 1, self.image_size, self.num_classes],
+                                           shape=[None, self.sequence_length, self.image_size * self.num_classes],
                                            name="input_target")
         # create placeholder to fill in lstm state
         self.c_state_train = tf.placeholder(tf.float32, [None, self.lstm_size], name="train_c")
@@ -123,7 +125,6 @@ class DRQN():
         # initial zero state to be used when starting episode
         self.initial_zero_state_batch = np.zeros((self.batch_size, self.lstm_size))
         self.initial_zero_state_single = np.zeros((1, self.lstm_size))
-
         self.initial_zero_complete = np.zeros((self.num_lstm_layers, 2, self.batch_size, self.lstm_size))
 
         self.dropout = tf.placeholder(dtype=tf.float32, shape=[],
@@ -162,29 +163,39 @@ class DRQN():
         shape = out.get_shape().as_list()
         '''
 
-        print(self.state.shape)
-        self.state_expanded = tf.expand_dims(self.state, 0)
-        self.state_flat = tf.contrib.layers.flatten(inputs=self.state_expanded)
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=256)
+        # print(self.state.shape)
+        #self.state_expanded = tf.expand_dims(self.state, 0)
+        #self.state_flat = tf.contrib.layers.flatten(inputs=self.state_expanded)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state, num_outputs=256)
         self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=64)
-        print(self.dense2.shape)
+        # print(self.dense2.shape)
 
-        '''
+
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_train")
+
+        # print(out.shape)
         self.state_output_c = state[0][0]
         self.state_output_h = state[0][1]
-        shape = out.get_shape().as_list()
-        out = tf.reshape(out, [tf.shape(out)[0], shape[2]])
+
+        #shape = out.get_shape().as_list()
+        #out = tf.reshape(out, [tf.shape(out)[0], shape[2]])
+
+        out = tf.reshape(out, [1, self.sequence_length * 512])
+        # print(out.shape)
+
         w, b, out = fully_connected_layer(out, self.num_actions, scope_name="out_train", activation=None)
 
         self.w["wout"] = w
         self.w["bout"] = b
-        '''
-        self.out = tf.contrib.layers.fully_connected(inputs=self.dense2, num_outputs=self.num_actions,
-                                                        activation_fn=None)
-        self.q_out = self.out
+
+        #self.out = tf.contrib.layers.fully_connected(inputs=self.dense2, num_outputs=self.num_actions,
+                                                        #activation_fn=None)
+        print(out.shape)
+
+        self.q_out = out
         self.q_action = tf.argmax(self.q_out, axis=1)
+        # print(self.q_action)
 
     def add_logits_op_target(self):
         '''
@@ -207,30 +218,27 @@ class DRQN():
         self.w_target["wc3"] = w
         self.w_target["bc3"] = b
         '''
-        self.state_expanded = tf.expand_dims(self.state, 0)
-        self.state_flat = tf.contrib.layers.flatten(inputs=self.state_expanded)
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=256)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state, num_outputs=256)
         self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=64)
 
-        '''
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
-                                   scope_name="lstm_train")
+                                   scope_name="lstm_target")
+
+
         self.state_output_target_c = state[0][0]
         self.state_output_target_h = state[0][1]
-        shape = out.get_shape().as_list()
 
-        out = tf.reshape(out, [tf.shape(out)[0], shape[2]])
+        # shape = out.get_shape().as_list()
 
-        w, b, out = fully_connected_layer(out, self.num_actions, scope_name="out_target", activation=None)
+        out = tf.reshape(out, [1, self.sequence_length * 512])
+        # print(out.shape)
+
+        w, b, out = fully_connected_layer(out, self.num_actions, scope_name="out_train", activation=None)
 
         self.w_target["wout"] = w
         self.w_target["bout"] = b
 
-        '''
-        self.out = tf.contrib.layers.fully_connected(inputs=self.dense2, num_outputs=self.num_actions,
-                                                     activation_fn=None)
-
-        self.q_target_out = self.out
+        self.q_target_out = out
         self.q_target_action = tf.argmax(self.q_target_out, axis=1)
 
     def train_on_batch_target(self, states, action, reward, terminal, steps):
@@ -240,7 +248,9 @@ class DRQN():
         action = np.transpose(action, [1, 0])
         reward = np.transpose(reward, [1, 0])
         terminal = np.transpose(terminal, [1, 0])
+        print("states shape:", states.shape)
         states = np.reshape(states, [states.shape[0], states.shape[1], 1, states.shape[2], states.shape[3]])
+        print("states shape:", states.shape)
         lstm_state_c, lstm_state_h = self.initial_zero_state_batch, self.initial_zero_state_batch
         lstm_state_target_c, lstm_state_target_h = self.sess.run(
             [self.state_output_target_c, self.state_output_target_h],
