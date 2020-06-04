@@ -52,9 +52,6 @@ class Env:
         self.row_position = self.start_row
         self.col_position = self.start_col
 
-
-        # for clarity maybe set constants as reward weights up here?
-        # if keeping track of exact rotation, a sharp turn could also have a penalty
         self.MINING_REWARD = 100
         self.FOREST_REWARD = 0
         self.WATER_REWARD = 30
@@ -68,8 +65,6 @@ class Env:
 
         # reset battery to 100
         self.battery = 100
-
-        # clear cached points however you would do that
 
         # randomize starting position
         self.start_row = random.randint(self.sight_dims, self.totalRows-self.sight_dims-1)
@@ -121,9 +116,7 @@ class Env:
         if self.battery <= 0 or (self.row_position == self.start_row and self.col_position == self.start_col and self.battery < 80):
             self.done = True
 
-        # print("Old Shape:", classifiedImage.shape)
         classifiedImage = self.flatten_state(classifiedImage)
-        # print("New Shape:", classifiedImage.shape)
 
         return classifiedImage, reward, self.done
 
@@ -141,8 +134,6 @@ class Env:
         forest_prob = classifiedImage[self.sight_dims, self.sight_dims, 1]
         water_prob = classifiedImage[self.sight_dims, self.sight_dims, 2]
 
-       # print(mining_prob, forest_prob, water_prob)
-
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
         reward += self.BATTERY_PENALTY*battery_dead + self.TIMESTEP_PENALTY + self.RETURN_REWARD*returned_to_start
@@ -150,7 +141,6 @@ class Env:
 
     def battery_loss(self, action):
         # can set this however we want the battery to deplete
-        # auxiliary neural net to optimize battery function
 
         # battery depletes less when hovering
         if action == 4:
@@ -182,19 +172,6 @@ class Env:
         flat_state = state.reshape(self.image_size, 3)
         return flat_state
 
-    '''
-    def save_cached_point(self, row, col):
-        cached_point = (row, col)
-        self.cached_points.append(cached_point)
-
-    def get_cached_point(self):
-        # calculate distance from current position to all current cached points (separate function?) and return the closest one
-        # I think it will be better if it can learn when to use cached points rather than hard coding,
-        # but I'm not exactly sure how to set that up at this point
-        # Consider comparing to just using GRU
-        cached_point = self.cached_points[0]
-        return cached_point
-    '''
 
 
 

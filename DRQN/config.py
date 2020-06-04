@@ -1,10 +1,8 @@
 class Config(object):
 
-# There's stuff in here we don't need so after implementing the rest FIX THIS
-    train_steps = 50000000
     batch_size = 1
     history_len = 4
-    frame_skip = 4
+    # frame_skip = 4
     epsilon_start = 1.0
     epsilon_end = 0.02
     max_steps = 10000
@@ -14,7 +12,7 @@ class Config(object):
     train_start = 200
     dir_save = "saved_session/"
     epsilon_decay = float((epsilon_start - epsilon_end))/float(epsilon_decay_episodes)
-    random_start = 10
+    # random_start = 10
     test_step = 5000
     network_type = "dqn"
 
