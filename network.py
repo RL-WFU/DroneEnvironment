@@ -1,12 +1,9 @@
 import numpy as np
 import os
-import time
 import tensorflow as tf
 import datetime
-import shutil
-from functools import reduce
 from tensorflow.python import debug as tf_debug
-from DRQN.utils import fully_connected_layer, stateful_lstm, huber_loss
+from utils import fully_connected_layer, stateful_lstm, huber_loss
 
 
 

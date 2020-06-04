@@ -2,7 +2,6 @@ import numpy as np
 import random
 import os
 
-
 class ReplayMemory:
 
     def __init__(self, config):

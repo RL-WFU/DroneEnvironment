@@ -1,5 +1,4 @@
-import random
-from DRQN.config import *
+from config import *
 
 from env import *
 config = Config

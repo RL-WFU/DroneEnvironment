@@ -1,9 +1,7 @@
-import tqdm as tqdm
 import collections
 import matplotlib.pyplot as plt
-from DRQN.replayMemory import *
-from DRQN.network import *
-
+from replayMemory import *
+from network import *
 
 class Agent:
 
@@ -72,12 +70,9 @@ class Agent:
             self.lstm_state_c, self.lstm_state_h = self.net.initial_zero_state_single, self.net.initial_zero_state_single
 
             for t in range(max_steps):
-                if t < self.config.sequence_length:
-                    action = np.random.randint(0, 4)
-                # Choose an action and take a step in the env
-                else:
-                    state = np.reshape(state, [1, self.config.image_size* self.config.num_classes])
-                    action = self.get_action(state)
+
+                state = np.reshape(state, [1, self.config.image_size* self.config.num_classes])
+                action = self.get_action(state)
 
                 next_state, reward, ep_done = self.env.step(action)
 
@@ -122,13 +117,13 @@ class Agent:
                                                                                               episode_lengths[self.episode_i],
                                                                                               self.epsilon,
                                                                                               most_common_actions[self.episode_i]))
-            #self.env.plot_visited()
+        '''    
         plt.plot(episode_rewards)
         plt.ylabel('Episode reward')
         plt.xlabel('Episode')
         plt.show()
         plt.clf()
-
+        '''
 
 
 
