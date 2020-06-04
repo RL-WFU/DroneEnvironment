@@ -125,7 +125,6 @@ class Env:
         classifiedImage = self.flatten_state(classifiedImage)
         # print("New Shape:", classifiedImage.shape)
 
-
         return classifiedImage, reward, self.done
 
     def get_reward(self, classifiedImage):

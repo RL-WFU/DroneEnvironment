@@ -34,34 +34,20 @@ class Agent:
         self.episode_i = np.load(self.config.dir_save+'step.npy')
 
     def get_action(self, state):
-        if np.random.rand() < self.epsilon:
+        if np.random.rand() < self.epsilon or self.episode_i < self.config.train_start:
             a = np.random.randint(0, self.env.num_actions)
-            # print("random:", a)
             return a
         else:
-            #print("state:", state.shape)
-            #print("state_train:", self.net.h_state_train.shape)
-            #print("lstm state:", self.lstm_state_h.shape)
             a, self.lstm_state_c, self.lstm_state_h = self.net.sess.run(
                 [self.net.q_action, self.net.state_output_c, self.net.state_output_h], {
+                    self.net.sequence_size: 1,
                     self.net.state: state,
                     self.net.c_state_train: self.lstm_state_c,
                     self.net.h_state_train: self.lstm_state_h
                 })
 
-            # a = self.net.sess.run(self.net.q_action, {self.net.state: state})
-            # print("a:", a)
             action = a[0]
             return action
-
-    def get_last_t_states(self, t, episode):
-        states = []
-        for i, transition in enumerate(episode[-t:]):
-            states.append(transition.state)
-
-        states = np.asarray(states)
-        states = np.reshape(states, [1, t, self.config.image_size * 3])
-        return states
 
     def train(self, max_steps, num_episodes):
         Transition = collections.namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
@@ -90,21 +76,22 @@ class Agent:
                     action = np.random.randint(0, 4)
                 # Choose an action and take a step in the env
                 else:
-                    states = self.get_last_t_states(self.config.sequence_length, episode)
-                    action = self.get_action(states)
-                # print(action)
-                next_state, reward, done = self.env.step(action)
+                    state = np.reshape(state, [1, self.config.image_size* self.config.num_classes])
+                    action = self.get_action(state)
+
+                next_state, reward, ep_done = self.env.step(action)
 
                 # Keep track of action and transition
                 actions.append(action)
                 episode.append(Transition(
-                    state=state, action=action, reward=reward, next_state=next_state, done=done))
+                    state=state, action=action, reward=reward, next_state=next_state, done=ep_done))
 
                 episode_rewards[self.episode_i] += reward
                 episode_lengths[self.episode_i] = t
 
                 # add to replay memory
-                self.replay_memory.add(next_state, reward, action, done, t)
+                # look at next_state vs states size
+                self.replay_memory.add(next_state, reward, action, ep_done, t)
 
                 # decrease epsilon
                 if self.episode_i < self.config.epsilon_decay_episodes and (self.epsilon >= self.config.epsilon_decay + self.config.epsilon_end):
@@ -122,7 +109,7 @@ class Agent:
                 if self.episode_i % self.config.update_freq == 0:
                     self.net.update_target()
 
-                if done:
+                if ep_done:
                     self.lstm_state_c, self.lstm_state_h = self.net.initial_zero_state_single, self.net.initial_zero_state_single
                     break
 
