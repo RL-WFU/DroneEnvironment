@@ -56,15 +56,14 @@ class Agent:
         self.update_count = 0
 
         for self.episode_i in range(num_episodes):
+
             # Reset the environment and pick the first action
-            self.env.reset()
+            state = self.env.reset()
 
             episode = []
             episode_rewards.append(0)
             episode_lengths.append(0)
 
-            # Right now the state is just the image -- do we need to pass battery/ start position/ anything as the state
-            state = self.env.getClassifiedDroneImage()
             actions = []
 
             self.lstm_state_c, self.lstm_state_h = self.net.initial_zero_state_single, self.net.initial_zero_state_single
@@ -89,7 +88,7 @@ class Agent:
                 self.replay_memory.add(next_state, reward, action, ep_done, t)
 
                 # decrease epsilon
-                if self.episode_i < self.config.epsilon_decay_episodes and (self.epsilon >= self.config.epsilon_decay + self.config.epsilon_end):
+                if self.episode_i < self.config.epsilon_decay_episodes and (self.epsilon >= self.config.epsilon_decay + self.config.epsilon_end) and self.episode_i > self.config.train_start:
                     self.epsilon -= self.config.epsilon_decay
 
                 # train the DRQN
@@ -117,13 +116,15 @@ class Agent:
                                                                                               episode_lengths[self.episode_i],
                                                                                               self.epsilon,
                                                                                               most_common_actions[self.episode_i]))
-        '''    
-        plt.plot(episode_rewards)
-        plt.ylabel('Episode reward')
-        plt.xlabel('Episode')
-        plt.show()
-        plt.clf()
-        '''
+            if self.episode_i % 50 == 0:
+                self.env.plot_visited()
+
+                plt.plot(episode_rewards)
+                plt.ylabel('Episode reward')
+                plt.xlabel('Episode')
+                plt.show()
+                plt.clf()
+
 
 
 

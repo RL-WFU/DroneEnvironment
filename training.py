@@ -3,11 +3,10 @@ from config import *
 from agent import *
 
 
-num_episodes = 50000
-max_steps = 1000
+num_episodes = 2000
+max_steps = 5000
 
 conf = Config()
-conf.env_image = '../sample12x12km2.jpg'
 environment = Env(conf)
 
 agent = Agent(conf, environment)

@@ -73,6 +73,8 @@ class Env:
         self.row_position = self.start_row
         self.col_position = self.start_col
 
+        return self.getClassifiedDroneImage()
+
     def step(self, action):
         self.done = False
         # need to add controls for reaching the edge of the region
@@ -154,7 +156,7 @@ class Env:
 
         for i in range(4):
             for j in range(4):
-                self.visited[self.row_position + i - self.sight_dims, self.col_position + j - self.sight_dims] *= .9
+                self.visited[self.row_position + i - self.sight_dims, self.col_position + j - self.sight_dims] *= .7
 
     def plot_visited(self):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')

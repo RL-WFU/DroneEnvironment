@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib
 
 # Create simulator object and load the image
-sim = ICRSsimulator('sample12x12km2.jpg')
+sim = ICRSsimulator('DroneImageTraining.JPG')
 if sim.loadImage() == False:
 	print("Error: could not load image")
 	sys.exit(0)

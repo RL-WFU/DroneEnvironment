@@ -163,8 +163,8 @@ class DRQN():
         '''
 
         self.state_flat = tf.reshape(self.state, [self.batch_size, self.sequence_size, self.image_size * self.num_classes])
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=256)
-        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=64)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=64)
+        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32)
 
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_train")
@@ -172,7 +172,7 @@ class DRQN():
         self.state_output_c = state[0][0]
         self.state_output_h = state[0][1]
 
-        out = tf.reshape(out, [1, 512])
+        out = tf.reshape(out, [1, self.lstm_size])
 
         w, b, out = fully_connected_layer(out, self.num_actions, scope_name="out_train", activation=None)
 
@@ -206,8 +206,8 @@ class DRQN():
         '''
         self.state_flat = tf.reshape(self.state,
                                      [self.batch_size, self.sequence_size, self.image_size * self.num_classes])
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=256)
-        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=64)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=64)
+        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32)
 
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_target")
@@ -216,7 +216,7 @@ class DRQN():
         self.state_output_target_c = state[0][0]
         self.state_output_target_h = state[0][1]
 
-        out = tf.reshape(out, [1, 512])
+        out = tf.reshape(out, [1, self.lstm_size])
 
         w, b, out = fully_connected_layer(out, self.num_actions, scope_name="out_train", activation=None)
 

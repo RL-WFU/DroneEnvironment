@@ -1,12 +1,11 @@
 class Config(object):
 
     batch_size = 1
-    history_len = 6
     epsilon_start = 1.0
     epsilon_end = 0.02
     max_steps = 10000
     epsilon_decay_episodes = 10000
-    train_freq = 8
+    train_freq = 4
     update_freq = 100
     train_start = 20
     dir_save = "DRQN/saved_session/"
@@ -22,11 +21,11 @@ class Config(object):
     keep_prob = 0.8
 
     num_lstm_layers = 1
-    lstm_size = 512
-    min_history = 6
+    lstm_size = 32
+    min_history = 10
     states_to_update = 1
 
-    env_image = 'sample12x12km2.jpg'
+    env_image = 'DroneImageTraining.JPG'
     image_size = 25
     num_classes = 3
     mem_size = 32
