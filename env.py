@@ -33,8 +33,8 @@ class Env:
         # Number of rows and colums of the map at the finest scale of classification
         # Each (i,j) position in the map is a 1-D array of classification likelihoods
         # of length given by the number of classes
-        self.totalRows = 268
-        self.totalCols = 250
+        self.totalRows = 200
+        self.totalCols = 200
         self.sim.setMapSize(self.totalRows, self.totalCols)
         self.sim.createMap()
         self.sight_dims = 2
@@ -58,6 +58,7 @@ class Env:
         self.RETURN_REWARD = 100
         self.TIMESTEP_PENALTY = -1
         self.BATTERY_PENALTY = -1000
+        self.COVERED_REWARD = 10000 # this is so big because it is covering so little in 5000 steps, can reduce if we inc number of steps
 
     def reset(self):
         # reset visited states
@@ -174,6 +175,15 @@ class Env:
         flat_state = state.reshape(self.image_size, 3)
         return flat_state
 
+    def calculate_covered(self):
+        covered = 1 - self.visited
+        covered_sum_matrix = covered.sum(axis=0)
+        covered_sum = covered_sum_matrix.sum(axis=0)
+
+        self.percent_covered = covered_sum/(self.totalCols*self.totalRows)
+        # print(self.percent_covered)
+
+        return self.percent_covered
 
 
 

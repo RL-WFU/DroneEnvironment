@@ -25,7 +25,7 @@ class Config(object):
     min_history = 10
     states_to_update = 1
 
-    env_image = 'DroneImageTraining.JPG'
+    env_image = '../DroneImageTraining.JPG'
     image_size = 25
     num_classes = 3
     mem_size = 32

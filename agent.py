@@ -109,13 +109,15 @@ class Agent:
 
                 state = next_state
 
+            covered = self.env.calculate_covered()
             data = collections.Counter(actions)
             most_common_actions.append(data.most_common(1))
-            print("Episode {} finished. Reward: {}. Steps: {}. Epsilon: {}. Most Common Action: {}".format(self.episode_i,
+            print("Episode {} finished. Reward: {}. Steps: {}. Covered: {}. Most Common Action: {}".format(self.episode_i,
                                                                                               episode_rewards[self.episode_i],
                                                                                               episode_lengths[self.episode_i],
-                                                                                              self.epsilon,
+                                                                                              covered,
                                                                                               most_common_actions[self.episode_i]))
+            '''
             if self.episode_i % 50 == 0:
                 self.env.plot_visited()
 
@@ -124,6 +126,8 @@ class Agent:
                 plt.xlabel('Episode')
                 plt.show()
                 plt.clf()
+                
+            '''
 
 
 
