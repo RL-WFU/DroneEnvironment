@@ -5,9 +5,9 @@ import numpy as np
 
 
 class Env:
-    def __init__(self, config):
+    def __init__(self):
         # Create simulator object and load the image
-        self.sim = ICRSsimulator(config.env_image)
+        self.sim = ICRSsimulator('sample12x12km2.jpg')
         if self.sim.loadImage() == False:
             print("Error: could not load image")
             sys.exit(0)
@@ -34,7 +34,7 @@ class Env:
         # Each (i,j) position in the map is a 1-D array of classification likelihoods
         # of length given by the number of classes
         self.totalRows = 268
-        self.totalCols = 250
+        self.totalCols = 252
         self.sim.setMapSize(self.totalRows, self.totalCols)
         self.sim.createMap()
         self.sight_dims = 2
@@ -72,6 +72,8 @@ class Env:
 
         self.row_position = self.start_row
         self.col_position = self.start_col
+
+        return self.getClassifiedDroneImage()
 
     def step(self, action):
         self.done = False
