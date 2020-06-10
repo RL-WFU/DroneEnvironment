@@ -1,7 +1,7 @@
 import collections
 import matplotlib.pyplot as plt
 from replayMemory import *
-from network import *
+from DRQN.network import *
 
 class Agent:
 
@@ -73,19 +73,19 @@ class Agent:
                 state = np.reshape(state, [1, self.config.image_size* self.config.num_classes])
                 action = self.get_action(state)
 
-                next_state, reward, ep_done = self.env.step(action)
+                action_taken, next_state, reward, ep_done = self.env.step(action)
 
                 # Keep track of action and transition
-                actions.append(action)
+                actions.append(action_taken)
                 episode.append(Transition(
-                    state=state, action=action, reward=reward, next_state=next_state, done=ep_done))
+                    state=state, action=action_taken, reward=reward, next_state=next_state, done=ep_done))
 
                 episode_rewards[self.episode_i] += reward
                 episode_lengths[self.episode_i] = t
 
                 # add to replay memory
                 # look at next_state vs states size
-                self.replay_memory.add(next_state, reward, action, ep_done, t)
+                self.replay_memory.add(next_state, reward, action_taken, ep_done, t)
 
                 # decrease epsilon
                 if self.episode_i < self.config.epsilon_decay_episodes and (self.epsilon >= self.config.epsilon_decay + self.config.epsilon_end) and self.episode_i > self.config.train_start:
@@ -99,15 +99,16 @@ class Agent:
                     self.total_loss += loss
                     self.update_count += 1
 
-                # update target network
-                if self.episode_i % self.config.update_freq == 0:
-                    self.net.update_target()
 
                 if ep_done:
                     self.lstm_state_c, self.lstm_state_h = self.net.initial_zero_state_single, self.net.initial_zero_state_single
                     break
 
                 state = next_state
+
+            # update target network
+            if self.episode_i % self.config.update_freq == 0:
+                self.net.update_target()
 
             covered = self.env.calculate_covered()
             data = collections.Counter(actions)
@@ -117,7 +118,7 @@ class Agent:
                                                                                               episode_lengths[self.episode_i],
                                                                                               covered,
                                                                                               most_common_actions[self.episode_i]))
-            '''
+
             if self.episode_i % 50 == 0:
                 self.env.plot_visited()
 
@@ -126,8 +127,14 @@ class Agent:
                 plt.xlabel('Episode')
                 plt.show()
                 plt.clf()
+
+        plt.plot(episode_rewards)
+        plt.ylabel('Episode reward')
+        plt.xlabel('Episode')
+        plt.show()
+        plt.clf()
                 
-            '''
+
 
 
 

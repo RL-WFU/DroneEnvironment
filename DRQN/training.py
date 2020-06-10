@@ -1,10 +1,10 @@
 from env import *
-from config import *
-from agent import *
+from DRQN.config import *
+from DRQN.agent import *
 
 
-num_episodes = 2000
-max_steps = 5000
+num_episodes = 300
+max_steps = 50
 
 conf = Config()
 environment = Env(conf)

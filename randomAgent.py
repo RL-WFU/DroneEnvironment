@@ -1,4 +1,4 @@
-from config import *
+from DRQN.config import *
 
 from env import *
 config = Config

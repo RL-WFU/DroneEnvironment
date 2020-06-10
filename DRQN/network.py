@@ -3,7 +3,7 @@ import os
 import tensorflow as tf
 import datetime
 from tensorflow.python import debug as tf_debug
-from utils import fully_connected_layer, stateful_lstm, huber_loss
+from DRQN.utils import fully_connected_layer, stateful_lstm, huber_loss
 
 
 
@@ -163,8 +163,8 @@ class DRQN():
         '''
 
         self.state_flat = tf.reshape(self.state, [self.batch_size, self.sequence_size, self.image_size * self.num_classes])
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=64)
-        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=32, activation='relu')
+        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32, activation='relu')
 
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_train")
@@ -206,8 +206,8 @@ class DRQN():
         '''
         self.state_flat = tf.reshape(self.state,
                                      [self.batch_size, self.sequence_size, self.image_size * self.num_classes])
-        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=64)
-        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32)
+        self.dense1 = tf.contrib.layers.fully_connected(inputs=self.state_flat, num_outputs=32, activation='relu')
+        self.dense2 = tf.contrib.layers.fully_connected(inputs=self.dense1, num_outputs=32, activation='relu')
 
         out, state = stateful_lstm(self.dense2, self.num_lstm_layers, self.lstm_size, tuple([self.lstm_state_train]),
                                    scope_name="lstm_target")
@@ -228,7 +228,7 @@ class DRQN():
 
     def train_on_batch_target(self, states, action, reward, terminal, steps):
         states = states / 255.0
-        q, loss = np.zeros((self.batch_size, self.num_actions)), 0
+        q, loss = np.zeros([self.batch_size, self.num_actions]), 0
         states = np.transpose(states, [1, 0, 2, 3])
         action = np.transpose(action, [1, 0])
         reward = np.transpose(reward, [1, 0])
@@ -289,6 +289,8 @@ class DRQN():
             )
             q += q_
             loss += train_loss_
+        print("loss:", loss)
+        print("q:", q)
 
         if steps % 20000 == 0 and steps > 50000:
             self.learning_rate *= self.lr_decay  # decay learning rate

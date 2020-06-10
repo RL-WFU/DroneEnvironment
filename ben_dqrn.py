@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
+import collections
 import random
 import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
+from keras.layers import LSTM
 from keras.optimizers import Adam
 
 from env import Env as Drone
+from DRQN.config import *
 
-EPISODES = 20000
+EPISODES = 500
 
 
 class DQNAgent:
@@ -26,8 +29,9 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, input_shape=[5, self.state_size+2], activation='relu'))
         model.add(Dense(24, activation='relu'))
+        model.add(LSTM(16))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
@@ -37,10 +41,10 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
         # Pass state (3x25), action, reward, next_state, ep_done
 
-    def act(self, state):
-        if np.random.rand() <= self.epsilon:
+    def act(self, states, t):
+        if np.random.rand() <= self.epsilon or t < 5:
             return random.randrange(self.action_size)
-        act_values = self.model.predict(state)
+        act_values = self.model.predict(states)
         return np.argmax(act_values[0])  # returns action
 
     def replay(self, batch_size):
@@ -62,31 +66,54 @@ class DQNAgent:
     def save(self, name):
         self.model.save_weights(name)
 
+    def get_last_t_states(self, t, episode):
+        states = []
+        for i, transition in enumerate(episode[-t:]):
+            states.append(transition.state)
+
+        states = np.asarray(states)
+        states = np.reshape(states, [5, 75])
+        states = np.expand_dims(states, axis=0)
+        return states
+
 
 if __name__ == "__main__":
-    env = Drone()
+    config = Config()
+    env = Drone(config)
     state_size = 75 # FIXME: make dynamic
     action_size = env.num_actions
     agent = DQNAgent(state_size, action_size)
     # agent.load("./save/cartpole-dqn.h5")
     done = False
     batch_size = 32
+    Transition = collections.namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
 
     for e in range(EPISODES):
+        episode = []
         total_reward = 0
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(1000):
+        for time in range(50):
+            states = np.zeros([1,5,75])
+            if time > 5:
+                states = agent.get_last_t_states(5, episode)
             # env.render()
-            action = agent.act(state)
-            next_state, reward, done = env.step(action)
+            action = agent.act(states, time)
+
+            action_taken, next_state, reward, done = env.step(action)
             total_reward += reward
             # reward = reward if not done else -10
             next_state = np.reshape(next_state, [1, state_size])
-            agent.memorize(state, action, reward, next_state, done)
-            state = next_state
 
-            if len(agent.memory) > batch_size:
+            episode.append(Transition(
+                state=state, action=action_taken, reward=reward, next_state=next_state, done=done))
+
+            state = next_state
+            if time > 5:
+                next_states = agent.get_last_t_states(5, episode)
+                agent.memorize(states, action_taken, reward, next_states, done)
+
+            if len(agent.memory) > batch_size and time > 5:
                 agent.replay(batch_size)
         # if e % 10 == 0:
         #     agent.save("./save/cartpole-dqn.h5")
