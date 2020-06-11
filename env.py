@@ -7,7 +7,7 @@ import numpy as np
 class Env:
     def __init__(self, config):
         # Create simulator object and load the image
-        self.sim = ICRSsimulator(config.env_image)
+        self.sim = ICRSsimulator('DroneImageTraining.png')
         if self.sim.loadImage() == False:
             print("Error: could not load image")
             sys.exit(0)
