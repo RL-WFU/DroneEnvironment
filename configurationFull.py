@@ -3,7 +3,7 @@ class Config(object):
     total_rows = 250
     total_cols = 250
 
-    num_episodes = 5
+    num_episodes = 5000
     max_steps = 5000
 
     sight_distance = 2
