@@ -3,7 +3,7 @@ class ConfigSimple(object):
     total_rows = 25
     total_cols = 25
 
-    num_episodes = 5000
-    max_steps = 5000
+    num_episodes = 200
+    max_steps = 50
 
     sight_distance = 2

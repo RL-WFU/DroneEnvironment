@@ -53,9 +53,9 @@ class Env:
         # randomize starting position
         #self.start_col = 2
         #self.start_col = 2
-        #start = random.sample(self.mining, 1)
-        #self.start_row = start[0][0]
-        #self.start_col = start[0][1]
+        start = random.sample(self.mining, 1)
+        self.start_row = start[0][0]
+        self.start_col = start[0][1]
         #self.start_row = random.randint(self.sight_distance, self.totalRows-self.sight_distance-1)
         #self.start_col = random.randint(self.sight_distance, self.totalCols-self.sight_distance-1)
         self.row_position = self.start_row
@@ -159,10 +159,11 @@ class Env:
             for j in range(4):
                 self.visited[self.row_position + i - self.sight_distance, self.col_position + j - self.sight_distance] *= .7
 
-    def plot_visited(self):
+    def plot_visited(self, fname):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
         plt.title("Drone Path")
-        plt.savefig()
+        plt.savefig(fname)
+        plt.clf()
 
     def get_classified_drone_image(self):
         self.sim.setDroneImgSize(self.sight_distance, self.sight_distance)

@@ -92,7 +92,7 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    config = Config()
+    config = ConfigSimple()
     env = Drone(config)
     state_size = 75
     action_size = env.num_actions
@@ -131,19 +131,23 @@ if __name__ == "__main__":
 
         episode_rewards[e] = total_reward
         episode_covered.append(env.calculate_covered())
-        if e > config.num_episodes - 4:
-            env.plot_visited()
+        if e == config.num_episodes - 3:
+            env.plot_visited('drone_path1.jpg')
+        if e == config.num_episodes - 2:
+            env.plot_visited('drone_path2.jpg')
+        if e == config.num_episodes - 1:
+            env.plot_visited('drone_path3.jpg')
         print("episode: {}/{}, reward: {}, percent covered: {}, start position: {},{}"
               .format(e, config.num_episodes, total_reward, episode_covered[e], env.start_row, env.start_col))
 
     plt.plot(episode_rewards)
     plt.ylabel('Episode reward')
     plt.xlabel('Episode')
-    plt.savefig()
+    plt.savefig('ddqn_reward3.png')
     plt.clf()
 
     plt.plot(episode_covered)
     plt.ylabel('Percent Covered')
     plt.xlabel('Episode')
-    plt.savefig()
+    plt.savefig('ddqn_coverage3.png')
     plt.clf()
