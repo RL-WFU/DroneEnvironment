@@ -7,7 +7,8 @@ from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
 from env import Env as Drone
-from DRQN.config import *
+from configurationSimple import *
+from configurationFull import *
 EPISODES = 300
 
 
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     episode_rewards = []
     episode_covered = []
 
-    for e in range(EPISODES):
+    for e in range(config.num_episodes):
         total_reward = 0
         actions = []
         episode_rewards.append(0)
@@ -85,13 +86,13 @@ if __name__ == "__main__":
         #state = np.append(state, env.col_position)
         #state = np.reshape(state, [1, (env.image_size * env.num_classes) + 2])
 
-        for time in range(50):
+        for time in range(config.max_steps):
             action = agent.act(state)
             if time == 0:
                 last_action = 4
             else:
                 last_action = actions[-1]
-            action_taken, next_state, reward, done = env.step(action, time, 50, last_action)
+            action_taken, next_state, reward, done = env.step(action, time, config.max_steps, last_action)
             total_reward += reward
             actions.append(action_taken)
             #next_state = np.append(next_state, env.row_position)
@@ -105,10 +106,10 @@ if __name__ == "__main__":
 
         episode_rewards[e] = total_reward
         episode_covered.append(env.calculate_covered())
-        if e > EPISODES - 10:
+        if e > env.num_episodes - 10:
             env.plot_visited()
         print("episode: {}/{}, score: {}, e: {:.2}, percent covered: {}, start position: {},{}"
-              .format(e, EPISODES, total_reward, agent.epsilon, episode_covered[e], env.start_row, env.start_col))
+              .format(e, env.num_episodes, total_reward, agent.epsilon, episode_covered[e], env.start_row, env.start_col))
 
     plt.plot(episode_rewards)
     plt.ylabel('Episode reward')

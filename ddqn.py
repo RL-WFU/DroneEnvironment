@@ -9,10 +9,9 @@ from keras import backend as K
 
 import tensorflow as tf
 from env import Env as Drone
-from DRQN.config import *
+from configurationSimple import *
+from configurationFull import *
 import matplotlib.pyplot as plt
-
-EPISODES = 500
 
 
 class DQNAgent:
@@ -105,26 +104,21 @@ if __name__ == "__main__":
     episode_rewards = []
     episode_covered = []
 
-    for e in range(EPISODES):
+    for e in range(config.num_episodes):
         total_reward = 0
         actions = []
         episode_rewards.append(0)
         state = env.reset()
-        for time in range(50):
+        for time in range(config.max_steps):
             # env.render()
             action = agent.act(state)
             if time == 0:
                 last_action = 4
             else:
                 last_action = actions[-1]
-            action_taken, next_state, reward, done = env.step(action, time, 50, last_action)
+            action_taken, next_state, reward, done = env.step(action, time, config.max_steps, last_action)
             total_reward += reward
             actions.append(action_taken)
-
-            #x, x_dot, theta, theta_dot = next_state
-            #r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8
-            #r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
-            #reward = r1 + r2
 
             agent.memorize(state, action, reward, next_state, done)
             state = next_state
@@ -137,19 +131,19 @@ if __name__ == "__main__":
 
         episode_rewards[e] = total_reward
         episode_covered.append(env.calculate_covered())
-        if e > EPISODES - 10:
+        if e > config.num_episodes - 4:
             env.plot_visited()
-        print("episode: {}/{}, score: {}, e: {:.2}, percent covered: {}, start position: {},{}"
-              .format(e, EPISODES, total_reward, agent.epsilon, episode_covered[e], env.start_row, env.start_col))
+        print("episode: {}/{}, reward: {}, percent covered: {}, start position: {},{}"
+              .format(e, config.num_episodes, total_reward, episode_covered[e], env.start_row, env.start_col))
 
     plt.plot(episode_rewards)
     plt.ylabel('Episode reward')
     plt.xlabel('Episode')
-    plt.show()
+    plt.savefig()
     plt.clf()
 
     plt.plot(episode_covered)
     plt.ylabel('Percent Covered')
     plt.xlabel('Episode')
-    plt.show()
+    plt.savefig()
     plt.clf()

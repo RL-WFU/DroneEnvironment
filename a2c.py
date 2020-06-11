@@ -1,6 +1,7 @@
 import tensorflow as tf
 from env import *
-from DRQN.config import *
+from configurationSimple import *
+from configurationFull import *
 import argparse
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
@@ -232,7 +233,7 @@ value_estimator = ValueEstimator_RNN(args.sight_dim, lr=args.lr)
 with tf.Session() as sess:
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
-    actor_critic(environment, policy_estimator, value_estimator, 500)
+    actor_critic(environment, policy_estimator, value_estimator, conf.num_episodes)
 
 environment.plot_visited()
 

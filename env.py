@@ -13,20 +13,21 @@ class Env:
             sys.exit(0)
 
         # Initialize map of size totalRows x totalCols from the loaded image
-        self.totalRows = 25
-        self.totalCols = 25
+        self.totalRows = config.total_rows
+        self.totalCols = config.total_cols
         self.set_simulation_map()
 
 
         # Set size of the image seen by the drone
-        self.sight_distance = 2
+        self.sight_distance = config.sight_distance
         self.image_size = (self.sight_distance*2 + 1) * (self.sight_distance*2 + 1)
 
         self.mining = self.total_mining()
 
         # Set drone position on map
-        self.start_row = self.sight_distance
-        self.start_col = self.sight_distance
+        self.start = self.highest_mining()
+        self.start_row = self.start[0]
+        self.start_col = self.start[1]
         self.row_position = self.start_row
         self.col_position = self.start_col
 
@@ -50,9 +51,11 @@ class Env:
         self.visited = np.ones_like(self.visited)
 
         # randomize starting position
-        start = random.sample(self.mining, 1)
-        self.start_row = start[0][0]
-        self.start_col = start[0][1]
+        #self.start_col = 2
+        #self.start_col = 2
+        #start = random.sample(self.mining, 1)
+        #self.start_row = start[0][0]
+        #self.start_col = start[0][1]
         #self.start_row = random.randint(self.sight_distance, self.totalRows-self.sight_distance-1)
         #self.start_col = random.randint(self.sight_distance, self.totalCols-self.sight_distance-1)
         self.row_position = self.start_row
@@ -104,12 +107,12 @@ class Env:
         self.row_position = next_row
         self.col_position = next_col
 
+        if time > max_steps - 2:
+            self.done = True
+
         reward = self.get_reward(classified_image, action)
 
         self.visited_position()
-
-        if time > max_steps - 2:
-            self.done = True
 
         state = self.flatten_state(classified_image)
         state = np.append(state, self.row_position)
@@ -134,7 +137,7 @@ class Env:
 
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
-        reward += self.TIMESTEP_PENALTY + self.HOVER_PENALTY*hover
+        reward += self.TIMESTEP_PENALTY + self.HOVER_PENALTY*hover + covered*self.COVERED_REWARD
         return reward
 
     def calculate_covered(self):
@@ -159,7 +162,7 @@ class Env:
     def plot_visited(self):
         plt.imshow(self.visited[:, :], cmap='gray', interpolation='none')
         plt.title("Drone Path")
-        plt.show()
+        plt.savefig()
 
     def get_classified_drone_image(self):
         self.sim.setDroneImgSize(self.sight_distance, self.sight_distance)
@@ -196,7 +199,6 @@ class Env:
 
     def total_mining(self):
         mining = self.sim.ICRSmap[:, :, 0]
-
         mining_positions = []
         for i in range(self.totalRows - self.sight_distance):
             for j in range(self.totalCols - self.sight_distance):
@@ -204,6 +206,19 @@ class Env:
                     mining_positions.append([i,j])
 
         return mining_positions
+
+    def highest_mining(self):
+        mining = self.sim.ICRSmap[:, :, 0]
+        highest_prob = 0
+        start_position = [2,2]
+        for i in range(self.totalRows - self.sight_distance):
+            for j in range(self.totalCols - self.sight_distance):
+                if mining[i][j] > highest_prob and i >= self.sight_distance and j >= self.sight_distance:
+                    highest_prob = mining[i][j]
+                    start_position = [i,j]
+
+        return start_position
+
 
 
 

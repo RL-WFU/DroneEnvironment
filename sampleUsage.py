@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib
 
 # Create simulator object and load the image
-sim = ICRSsimulator('simpleTest.jpg')
+sim = ICRSsimulator('DroneImageTraining.png')
 if sim.loadImage() == False:
 	print("Error: could not load image")
 	sys.exit(0)
@@ -31,8 +31,8 @@ sim.classify('Water', lower, upper, interestValue)
 # Number of rows and colums of the map at the finest scale of classification
 # Each (i,j) position in the map is a 1-D array of classification likelihoods
 # of length given by the number of classes
-rows = 25
-cols = 25
+rows = 250
+cols = 250
 sim.setMapSize(rows, cols)
 
 # The map will contain 3 values per map element, simulating the
