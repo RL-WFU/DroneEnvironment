@@ -7,32 +7,64 @@ import numpy as np
 class Env:
     def __init__(self, config):
         # Create simulator object and load the image
-        self.sim = ICRSsimulator('DroneImageTraining.png')
-        if self.sim.loadImage() == False:
+        self.config = config
+        self.sim = []
+
+        for i in range(config.num_images):
+            self.sim.append(ICRSsimulator(config.images[i]))
+            if self.sim[i].loadImage() == False:
+                print("Error: could not load image")
+                sys.exit(0)
+        '''
+        self.sim2 = ICRSsimulator(config.image_2)
+        if self.sim2.loadImage() == False:
             print("Error: could not load image")
             sys.exit(0)
+
+        self.sim3 = ICRSsimulator(config.image_3)
+        if self.sim3.loadImage() == False:
+            print("Error: could not load image")
+            sys.exit(0)
+        '''
+
+        self.image_num = random.randint(1, config.num_images)
 
         # Initialize map of size totalRows x totalCols from the loaded image
         self.totalRows = config.total_rows
         self.totalCols = config.total_cols
-        self.set_simulation_map()
-
 
         # Set size of the image seen by the drone
         self.sight_distance = config.sight_distance
-        self.image_size = (self.sight_distance*2 + 1) * (self.sight_distance*2 + 1)
+        self.image_size = (self.sight_distance * 2 + 1) * (self.sight_distance * 2 + 1)
 
-        self.mining = self.total_mining()
+        self.mining = []
+        for i in range(config.num_images):
+            self.set_simulation_map(self.sim[i])
+            self.mining.append(self.total_mining(self.sim[i]))
+        # self.set_simulation_map(self.sim2)
+        # self.set_simulation_map(self.sim3)
+        # self.mining2 = self.total_mining(self.sim2)
+        # self.mining3 = self.total_mining(self.sim3)
 
         # Set drone position on map
-        self.start = self.highest_mining()
-        self.start_row = self.start[0]
-        self.start_col = self.start[1]
+        '''
+        if self.image_num == 1:
+            start = random.sample(self.mining, 1)
+        elif self.image_num == 2:
+            start = random.sample(self.mining2, 1)
+        elif self.image_num == 3:
+            start = random.sample(self.mining3, 1)
+            
+        '''
+        start = random.sample(self.mining[self.image_num-1], 1)
+        self.start_row = start[0][0]
+        self.start_col = start[0][1]
         self.row_position = self.start_row
         self.col_position = self.start_col
 
         # Set array to keep track of locations already visited
         self.visited = np.ones([self.totalRows, self.totalCols])
+        self.mining_seen = 0
 
         # Set number of possible actions and simulation classes
         self.num_actions = 5
@@ -44,16 +76,20 @@ class Env:
         self.WATER_REWARD = 30
         self.TIMESTEP_PENALTY = -1
         self.HOVER_PENALTY = -5
-        self.COVERED_REWARD = 1000
+        self.COVERED_REWARD = 1500
 
     def reset(self):
         # reset visited states
         self.visited = np.ones_like(self.visited)
+        self.mining_seen = 0
+
+        self.image_num = random.randint(1, self.config.num_images)
+        # print(self.image_num)
 
         # randomize starting position
         #self.start_col = 2
         #self.start_col = 2
-        start = random.sample(self.mining, 1)
+        start = random.sample(self.mining[self.image_num-1],1)
         self.start_row = start[0][0]
         self.start_col = start[0][1]
         #self.start_row = random.randint(self.sight_distance, self.totalRows-self.sight_distance-1)
@@ -63,12 +99,15 @@ class Env:
 
         # get drone image and append current position to set new state
         state = self.get_classified_drone_image()
-        state = np.append(state, self.row_position)
-        state = np.append(state, self.col_position)
-        state = np.reshape(state, [1, (self.image_size * self.num_classes) + 2])
+        state = np.reshape(state, [1, self.image_size * self.num_classes])
+        state = np.append(state, 1)
+        state = np.append(state, 1)
+        state = np.append(state, 1)
+        state = np.append(state, 1)
+        state = np.reshape(state, [1, (self.image_size * self.num_classes) + 4])
         return state
 
-    def step(self, action, time, max_steps, last_action):
+    def step(self, action, time, max_steps):
         self.done = False
 
         next_row = self.row_position
@@ -99,10 +138,10 @@ class Env:
             else:
                 action = 4
 
-        self.sim.setDroneImgSize(self.sight_distance, self.sight_distance)
-        self.sim.setNavigationMap()
+        self.sim[self.image_num-1].setDroneImgSize(self.sight_distance, self.sight_distance)
+        self.sim[self.image_num-1].setNavigationMap()
 
-        classified_image = self.sim.getClassifiedDroneImageAt(next_row, next_col)
+        classified_image = self.sim[self.image_num-1].getClassifiedDroneImageAt(next_row, next_col)
 
         self.row_position = next_row
         self.col_position = next_col
@@ -112,21 +151,37 @@ class Env:
 
         reward = self.get_reward(classified_image, action)
 
+        state = classified_image[:,:,:]
+        state = self.flatten_state(state)
+        state = np.append(state, self.visited[self.row_position+1, self.col_position])
+        state = np.append(state, self.visited[self.row_position, self.col_position+1])
+        state = np.append(state, self.visited[self.row_position-1, self.col_position])
+        state = np.append(state, self.visited[self.row_position, self.col_position+1])
+        state = np.reshape(state, [1, (self.image_size * self.num_classes)+4])
+
         self.visited_position()
 
-        state = self.flatten_state(classified_image)
-        state = np.append(state, self.row_position)
-        state = np.append(state, self.col_position)
-        state = np.reshape(state, [1, (self.image_size * self.num_classes) + 2])
         return action, state, reward, self.done
 
     def get_reward(self, classified_image, action):
 
         if self.done:
             covered = self.calculate_covered()
+            #mining = self.mining_seen/(covered*self.totalRows*self.totalCols)
+            #reward = self.COVERED_REWARD*covered + mining*self.MINING_REWARD
+            #print(self.mining_seen)
         else:
+            #reward = 0
             covered = 0
 
+        '''
+        for i in range(4):
+            for j in range(4):
+
+                if classified_image[i, j, 0] * self.visited[self.row_position, self.col_position] > 0:
+                    self.mining_seen += 1
+
+        '''
         mining_prob = classified_image[self.sight_distance, self.sight_distance, 0]
         forest_prob = classified_image[self.sight_distance, self.sight_distance, 1]
         water_prob = classified_image[self.sight_distance, self.sight_distance, 2]
@@ -138,6 +193,7 @@ class Env:
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
         reward += self.TIMESTEP_PENALTY + self.HOVER_PENALTY*hover + covered*self.COVERED_REWARD
+
         return reward
 
     def calculate_covered(self):
@@ -148,7 +204,6 @@ class Env:
                     covered += 1
 
         percent_covered = covered / (self.totalCols * self.totalRows)
-        # print(self.percent_covered)
 
         return percent_covered
 
@@ -166,9 +221,9 @@ class Env:
         plt.clf()
 
     def get_classified_drone_image(self):
-        self.sim.setDroneImgSize(self.sight_distance, self.sight_distance)
-        self.sim.setNavigationMap()
-        image = self.sim.getClassifiedDroneImageAt(self.row_position, self.col_position)
+        self.sim[self.image_num-1].setDroneImgSize(self.sight_distance, self.sight_distance)
+        self.sim[self.image_num-1].setNavigationMap()
+        image = self.sim[self.image_num-1].getClassifiedDroneImageAt(self.row_position, self.col_position)
         image = self.flatten_state(image)
         return image
 
@@ -176,30 +231,30 @@ class Env:
         flat_state = state.reshape(1, self.image_size * self.num_classes)
         return flat_state
 
-    def set_simulation_map(self):
+    def set_simulation_map(self, sim):
         # Simulate classification of mining areas
         lower = np.array([50, 80, 70])
         upper = np.array([100, 115, 110])
         interest_value = 1  # Mark these areas as being of highest interest
-        self.sim.classify('Mining', lower, upper, interest_value)
+        sim.classify('Mining', lower, upper, interest_value)
 
         # Simulate classification of forest areas
         lower = np.array([0, 49, 0])
         upper = np.array([90, 157, 138])
         interest_value = 0  # Mark these areas as being of no interest
-        self.sim.classify('Forest', lower, upper, interest_value)
+        sim.classify('Forest', lower, upper, interest_value)
 
         # Simulate classification of water
         lower = np.array([40, 70, 47])
         upper = np.array([70, 100, 80])
         interest_value = 0  # Mark these areas as being of no interest
-        self.sim.classify('Water', lower, upper, interest_value)
+        sim.classify('Water', lower, upper, interest_value)
 
-        self.sim.setMapSize(self.totalRows, self.totalCols)
-        self.sim.createMap()
+        sim.setMapSize(self.totalRows, self.totalCols)
+        sim.createMap()
 
-    def total_mining(self):
-        mining = self.sim.ICRSmap[:, :, 0]
+    def total_mining(self, sim):
+        mining = sim.ICRSmap[:, :, 0]
         mining_positions = []
         for i in range(self.totalRows - self.sight_distance):
             for j in range(self.totalCols - self.sight_distance):
@@ -208,8 +263,8 @@ class Env:
 
         return mining_positions
 
-    def highest_mining(self):
-        mining = self.sim.ICRSmap[:, :, 0]
+    def highest_mining(self, sim):
+        mining = sim.ICRSmap[:, :, 0]
         highest_prob = 0
         start_position = [2,2]
         for i in range(self.totalRows - self.sight_distance):

@@ -137,6 +137,11 @@ def actor_critic(env, estimator_policy, estimator_value, num_episodes, discount_
     episode_lengths = []
     episode_covered = []
     most_common_actions = []
+    average_over = env.config.num_episodes / 10
+    average_reward = []
+    average_covered = []
+    average_r = 0
+    average_c = 0
     for i_episode in range(num_episodes):
         # Reset the environment and pick the first action
         state = env.reset()
@@ -149,7 +154,7 @@ def actor_critic(env, estimator_policy, estimator_value, num_episodes, discount_
         reward = 0
         actions = []
 
-        for t in range(50):
+        for t in range(env.config.max_steps):
 
             # Take a step
             if t < args.seq_length:
@@ -195,24 +200,38 @@ def actor_critic(env, estimator_policy, estimator_value, num_episodes, discount_
         episode_covered.append(env.calculate_covered())
         data = collections.Counter(actions)
         most_common_actions.append(data.most_common(1))
+        average_r += episode_rewards[i_episode]
+        average_c += episode_covered[i_episode]
+        if i_episode % average_over == 0:
+            average_r /= average_over
+            average_c /= average_over
+            average_reward.append(average_r)
+            average_covered.append(average_c)
+            average_r = 0
+            average_c = 0
+        if i_episode == env.config.num_episodes - 3:
+            env.plot_visited('drone_path1_a2c_baseline.jpg')
+        if i_episode == env.config.num_episodes - 2:
+            env.plot_visited('drone_path2_a2c_baseline.jpg')
+        if i_episode == env.config.num_episodes - 1:
+            env.plot_visited('drone_path3_a2c_baseline.jpg')
         print("Episode {} finished. Reward: {}. Steps: {}. Most Common Action: {}. Percent Covered: {}".format(i_episode,
                                                                                           episode_rewards[i_episode],
                                                                                           episode_lengths[i_episode],
                                                                                           most_common_actions[
                                                                                               i_episode],
                                                                                           episode_covered[i_episode]))
-    plt.plot(episode_rewards)
-    plt.ylabel('Episode reward')
+    plt.plot(average_reward)
+    plt.ylabel('Averaged Episode reward')
     plt.xlabel('Episode')
-    plt.show()
+    plt.savefig('a2c_reward_baseline.png')
     plt.clf()
 
-    plt.plot(episode_covered)
-    plt.ylabel('Percent Covered')
+    plt.plot(average_covered)
+    plt.ylabel('Average Percent Covered')
     plt.xlabel('Episode')
-    plt.show()
+    plt.savefig('a2c_coverage_baseline.png')
     plt.clf()
-
 
 parser = argparse.ArgumentParser(description='Drone A2C trainer')
 
@@ -225,7 +244,7 @@ parser.add_argument('--gamma', default=0.99, type=float, help='discount factor')
 parser.add_argument('--extra_layer', default=False, help='extra hidden layer between recurrent and output')
 args = parser.parse_args()
 
-conf = Config()
+conf = ConfigSimple()
 environment = Env(conf)
 policy_estimator = PolicyEstimator_RNN(args.sight_dim, lr=args.lr)
 value_estimator = ValueEstimator_RNN(args.sight_dim, lr=args.lr)
@@ -235,7 +254,6 @@ with tf.Session() as sess:
     sess.run(init_op)
     actor_critic(environment, policy_estimator, value_estimator, conf.num_episodes)
 
-environment.plot_visited()
 
 # TO DO:
 # Currently, reward is based on only the current state. Try to import only the current state,

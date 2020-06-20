@@ -1,9 +1,9 @@
 class Config(object):
     env_image = 'DroneImageTraining.png'
-    total_rows = 250
-    total_cols = 250
+    total_rows = 25
+    total_cols = 25
 
-    num_episodes = 5000
-    max_steps = 5000
+    num_episodes = 500
+    max_steps = 50
 
     sight_distance = 2

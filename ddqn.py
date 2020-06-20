@@ -45,7 +45,7 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size+2, activation='relu'))
+        model.add(Dense(24, input_dim=self.state_size+4, activation='relu'))
         model.add(Dense(24, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
@@ -103,22 +103,22 @@ if __name__ == "__main__":
 
     episode_rewards = []
     episode_covered = []
+    average_over = config.num_episodes / 100
+    average_reward = []
+    average_covered = []
+    average_r = 0
+    average_c = 0
+    max_reward = 0
 
     for e in range(config.num_episodes):
         total_reward = 0
-        actions = []
         episode_rewards.append(0)
         state = env.reset()
         for time in range(config.max_steps):
             # env.render()
             action = agent.act(state)
-            if time == 0:
-                last_action = 4
-            else:
-                last_action = actions[-1]
-            action_taken, next_state, reward, done = env.step(action, time, config.max_steps, last_action)
+            action_taken, next_state, reward, done = env.step(action, time, config.max_steps)
             total_reward += reward
-            actions.append(action_taken)
 
             agent.memorize(state, action, reward, next_state, done)
             state = next_state
@@ -129,25 +129,67 @@ if __name__ == "__main__":
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
 
+        covered = env.calculate_covered()
         episode_rewards[e] = total_reward
-        episode_covered.append(env.calculate_covered())
+        episode_covered.append(covered)
+        average_r += total_reward
+        average_c += covered
+        if e % average_over == 0:
+            average_r /= average_over
+            average_c /= average_over
+            average_reward.append(average_r)
+            average_covered.append(average_c)
+            average_r = 0
+            average_c = 0
+            plt.plot(average_reward)
+            plt.ylabel('Averaged Episode reward')
+            plt.xlabel('Episode')
+            plt.savefig('ddqn_average_reward.png')
+            plt.clf()
+            plt.plot(episode_rewards)
+            plt.ylabel('Episode reward')
+            plt.xlabel('Episode')
+            plt.savefig('ddqn_reward.png')
+            plt.clf()
+            plt.plot(average_covered)
+            plt.ylabel('Average Percent Covered')
+            plt.xlabel('Episode')
+            plt.savefig('ddqn_average_coverage.png')
+            plt.clf()
+            plt.plot(episode_covered)
+            plt.ylabel('Percent Covered')
+            plt.xlabel('Episode')
+            plt.savefig('ddqn_coverage.png')
+            plt.clf()
+        if e == config.num_episodes - 6:
+            env.plot_visited('ddqn_drone_path1.jpg')
+        if e == config.num_episodes - 5:
+            env.plot_visited('ddqn_drone_path2.jpg')
+        if e == config.num_episodes - 4:
+            env.plot_visited('ddqn_drone_path3.jpg')
         if e == config.num_episodes - 3:
-            env.plot_visited('drone_path1.jpg')
+            env.plot_visited('ddqn_drone_path4.jpg')
         if e == config.num_episodes - 2:
-            env.plot_visited('drone_path2.jpg')
+            env.plot_visited('ddqn_drone_path5.jpg')
         if e == config.num_episodes - 1:
-            env.plot_visited('drone_path3.jpg')
+            env.plot_visited('ddqn_drone_path6.jpg')
+
+        if total_reward >= max_reward:
+            max_reward = total_reward
+            env.plot_visited('drone_max.jpg')
+            agent.save('ddqn_trained_weights.h5')
+
         print("episode: {}/{}, reward: {}, percent covered: {}, start position: {},{}"
               .format(e, config.num_episodes, total_reward, episode_covered[e], env.start_row, env.start_col))
 
-    plt.plot(episode_rewards)
-    plt.ylabel('Episode reward')
+    plt.plot(average_reward)
+    plt.ylabel('Averaged Episode reward')
     plt.xlabel('Episode')
-    plt.savefig('ddqn_reward3.png')
+    plt.savefig('ddqn_average_reward.png')
     plt.clf()
 
-    plt.plot(episode_covered)
-    plt.ylabel('Percent Covered')
+    plt.plot(average_covered)
+    plt.ylabel('Average Percent Covered')
     plt.xlabel('Episode')
-    plt.savefig('ddqn_coverage3.png')
+    plt.savefig('ddqn_average_coverage.png')
     plt.clf()

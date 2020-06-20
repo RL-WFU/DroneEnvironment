@@ -13,17 +13,17 @@ import math
 
 class ICRSsimulator(object):
 	imgName = ""						  # The image filename
-	classLabels = [] 					  # List of the labels for each class
-	binaryImgs = []						  # List of binary images, one for each class
-	interestValues = []					  # List of interest values, one for each class
-	mapSize = {'rows': 0, 'cols': 0}	  # Size of the classification map
-	droneImgSize = {'rows': 0, 'cols': 0} # Size in elements in the map of a drone image
-	img = None							  # Image object
-	ICRSmap = None 						  # Overall classification map
-	navigationMap = None				  # Map of positions where the drone can be
 
 	def __init__(self, imageName):
 		self.imgName = imageName
+		self.classLabels = []  # List of the labels for each class
+		self.binaryImgs = []  # List of binary images, one for each class
+		self.interestValues = []  # List of interest values, one for each class
+		self.mapSize = {'rows': 0, 'cols': 0}  # Size of the classification map
+		self.droneImgSize = {'rows': 0, 'cols': 0}  # Size in elements in the map of a drone image
+		self.img = None  # Image object
+		self.ICRSmap = None  # Overall classification map
+		self.navigationMap = None  # Map of positions where the drone can be
 
 	# Load the image and return true if it succeeded
 	def loadImage(self):
@@ -85,6 +85,7 @@ class ICRSsimulator(object):
 		# DEBUG: print("ppr, ppc = " + str(pixelsPerRow) + ", " + str(pixelsPerCol))
 		# The overall map will be stored in a 3D numpy array of dim: rows x cols x num of classes
 		self.ICRSmap = np.zeros((rows, cols, len(self.binaryImgs)))
+
 
 		# Simulate classification of object class k for each box of the ICRSmap
 		for k in range(0, len(self.binaryImgs)):   # for each class type
@@ -157,6 +158,10 @@ class ICRSsimulator(object):
 			axs[k+1].imshow(self.ICRSmap[:,:,k], cmap = 'gray', interpolation = 'none')
 			axs[k+1].set_title(self.classLabels[k])
 		plt.show()
+		plt.clf()
+
+		plt.imshow(self.ICRSmap[:, :, 0], cmap='gray', interpolation='none')
+		plt.savefig('mining.jpg')
 
 		
 		
