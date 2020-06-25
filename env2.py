@@ -77,8 +77,10 @@ class Env:
         self.TIMESTEP_PENALTY = -1
         self.HOVER_PENALTY = -5
         self.COVERED_REWARD = 1500
+        self.CHECKPT_REWARD = 100
 
     def reset(self):
+
         # reset visited states
         self.visited = np.ones_like(self.visited)
         self.mining_seen = 0
@@ -86,12 +88,16 @@ class Env:
         self.image_num = random.randint(1, self.config.num_images)
         # print(self.image_num)
 
+        way_points = self.get_way_points()
+
         # randomize starting position
         #self.start_col = 2
         #self.start_col = 2
-        start = random.sample(self.mining[self.image_num-1],1)
-        self.start_row = start[0][0]
-        self.start_col = start[0][1]
+        start = way_points[0]
+        self.checkpt = way_points[1]
+        self.end = way_points[2]
+        self.start_row = start[0]
+        self.start_col = start[1]
         #self.start_row = random.randint(self.sight_distance, self.totalRows-self.sight_distance-1)
         #self.start_col = random.randint(self.sight_distance, self.totalCols-self.sight_distance-1)
         self.row_position = self.start_row
@@ -104,7 +110,11 @@ class Env:
         state = np.append(state, 1)
         state = np.append(state, 1)
         state = np.append(state, 1)
-        state = np.reshape(state, [1, (self.image_size * self.num_classes) + 4])
+        state = np.append(state, self.checkpt[0])
+        state = np.append(state, self.checkpt[1])
+        state = np.append(state, self.end[0])
+        state = np.append(state, self.end[1])
+        state = np.reshape(state, [1, (self.image_size * self.num_classes) + 8])
         return state
 
     def step(self, action, time, max_steps):
@@ -146,7 +156,7 @@ class Env:
         self.row_position = next_row
         self.col_position = next_col
 
-        if time > max_steps - 2 or self.calculate_covered() > .06:
+        if time >= max_steps or (self.row_position == self.end[0] and self.col_position == self.end[1]):
             self.done = True
 
         reward = self.get_reward(classified_image, action)
@@ -157,7 +167,11 @@ class Env:
         state = np.append(state, self.visited[self.row_position, self.col_position+1])
         state = np.append(state, self.visited[self.row_position-1, self.col_position])
         state = np.append(state, self.visited[self.row_position, self.col_position+1])
-        state = np.reshape(state, [1, (self.image_size * self.num_classes)+4])
+        state = np.append(state, self.checkpt[0])
+        state = np.append(state, self.checkpt[1])
+        state = np.append(state, self.end[0])
+        state = np.append(state, self.end[1])
+        state = np.reshape(state, [1, (self.image_size * self.num_classes)+8])
 
         self.visited_position()
 
@@ -174,14 +188,11 @@ class Env:
             #reward = 0
             covered = 0
 
-        '''
-        for i in range(4):
-            for j in range(4):
+        if (self.row_position == self.checkpt[0] and self.col_position == self.checkpt[1] and self.visited[self.row_position, self.col_position] > 0) or (self.row_position == self.end[0] and self.col_position == self.end[1]):
+            checkpt = True
+        else:
+            checkpt = False
 
-                if classified_image[i, j, 0] * self.visited[self.row_position, self.col_position] > 0:
-                    self.mining_seen += 1
-
-        '''
         mining_prob = classified_image[self.sight_distance, self.sight_distance, 0]
         forest_prob = classified_image[self.sight_distance, self.sight_distance, 1]
         water_prob = classified_image[self.sight_distance, self.sight_distance, 2]
@@ -192,7 +203,7 @@ class Env:
 
         reward = mining_prob*self.MINING_REWARD + forest_prob*self.FOREST_REWARD + water_prob*self.WATER_REWARD
         reward = reward*self.visited[self.row_position, self.col_position]
-        reward += self.TIMESTEP_PENALTY + self.HOVER_PENALTY*hover + covered*self.COVERED_REWARD
+        reward += self.TIMESTEP_PENALTY + self.HOVER_PENALTY*hover + covered*self.COVERED_REWARD + checkpt*self.CHECKPT_REWARD
 
         return reward
 
@@ -233,22 +244,22 @@ class Env:
 
     def set_simulation_map(self, sim):
         # Simulate classification of mining areas
-        lower = np.array([50, 80, 70])
-        upper = np.array([100, 115, 110])
+        lower = np.array([80, 90, 70])
+        upper = np.array([100, 115, 150])
         interest_value = 1  # Mark these areas as being of highest interest
         sim.classify('Mining', lower, upper, interest_value)
 
         # Simulate classification of forest areas
         lower = np.array([0, 49, 0])
-        upper = np.array([90, 157, 138])
+        upper = np.array([80, 157, 138])
         interest_value = 0  # Mark these areas as being of no interest
         sim.classify('Forest', lower, upper, interest_value)
 
         # Simulate classification of water
-        lower = np.array([40, 70, 47])
-        upper = np.array([70, 100, 80])
-        interest_value = 0  # Mark these areas as being of no interest
-        sim.classify('Water', lower, upper, interest_value)
+        lower = np.array([92, 100, 90])
+        upper = np.array([200, 190, 200])
+        interestValue = 0  # Mark these areas as being of no interest
+        sim.classify('Water', lower, upper, interestValue)
 
         sim.setMapSize(self.totalRows, self.totalCols)
         sim.createMap()
@@ -258,7 +269,7 @@ class Env:
         mining_positions = []
         for i in range(self.totalRows - self.sight_distance):
             for j in range(self.totalCols - self.sight_distance):
-                if mining[i][j] > 0 and i >= self.sight_distance and j >= self.sight_distance:
+                if mining[i][j] > 0.1 and i >= self.sight_distance and j >= self.sight_distance:
                     mining_positions.append([i,j])
 
         return mining_positions
@@ -275,8 +286,9 @@ class Env:
 
         return start_position
 
-
-
+    def get_way_points(self):
+        way_points = random.sample(self.mining[self.image_num-1],3)
+        return way_points
 
 
 

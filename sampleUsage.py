@@ -5,34 +5,33 @@ import numpy as np
 import matplotlib
 
 # Create simulator object and load the image
-sim = ICRSsimulator('10x10image.jpg')
+sim = ICRSsimulator('env_images/image_d.png')
 if sim.loadImage() == False:
 	print("Error: could not load image")
 	sys.exit(0)
 
-# Simulate classification of mining areas
-lower = np.array([50, 80, 70])
-upper = np.array([100, 115, 110])
-interestValue = 1	# Mark these areas as being of highest interest
-sim.classify('Mining', lower, upper, interestValue)
+lower = np.array([80, 90, 70])
+upper = np.array([100, 115, 150])
+interest_value = 1  # Mark these areas as being of highest interest
+sim.classify('Mining', lower, upper, interest_value)
 
 # Simulate classification of forest areas
 lower = np.array([0, 49, 0])
-upper = np.array([90, 157, 138])
-interestValue = 0	# Mark these areas as being of no interest 
-sim.classify('Forest', lower, upper, interestValue)
+upper = np.array([80, 157, 138])
+interest_value = 0  # Mark these areas as being of no interest
+sim.classify('Forest', lower, upper, interest_value)
 
 # Simulate classification of water
-lower = np.array([40, 70, 47])
-upper = np.array([70, 100, 80])
+lower = np.array([92, 100, 90])
+upper = np.array([200, 190, 200])
 interestValue = 0	# Mark these areas as being of no interest
 sim.classify('Water', lower, upper, interestValue)
 
 # Number of rows and colums of the map at the finest scale of classification
 # Each (i,j) position in the map is a 1-D array of classification likelihoods
 # of length given by the number of classes
-rows = 10
-cols = 10
+rows = 200
+cols = 200
 sim.setMapSize(rows, cols)
 
 # The map will contain 3 values per map element, simulating the

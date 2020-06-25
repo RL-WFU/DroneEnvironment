@@ -78,7 +78,7 @@ class DQNAgent:
 
 if __name__ == "__main__":
     config = ConfigSimple()
-    env = Drone(config,config.env_image_train)
+    env = Drone(config)
     state_size = 75 # FIXME: make dynamic
     action_size = env.num_actions
     agent = DQNAgent(state_size, action_size)

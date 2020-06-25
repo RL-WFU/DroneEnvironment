@@ -8,7 +8,7 @@ from keras.optimizers import Adam
 from keras import backend as K
 
 import tensorflow as tf
-from env import Env as Drone
+from env2 import Env as Drone
 from configurationSimple import *
 from configurationFull import *
 import matplotlib.pyplot as plt
@@ -45,7 +45,7 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size+4, activation='relu'))
+        model.add(Dense(24, input_dim=self.state_size+8, activation='relu'))
         model.add(Dense(24, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
@@ -114,6 +114,7 @@ if __name__ == "__main__":
         total_reward = 0
         episode_rewards.append(0)
         state = env.reset()
+        t = 0
         for time in range(config.max_steps):
             # env.render()
             action = agent.act(state)
@@ -128,6 +129,7 @@ if __name__ == "__main__":
 
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
+            t = time
 
         covered = env.calculate_covered()
         episode_rewards[e] = total_reward
@@ -179,8 +181,8 @@ if __name__ == "__main__":
             env.plot_visited('drone_max.jpg')
             agent.save('ddqn_trained_weights.h5')
 
-        print("episode: {}/{}, reward: {}, percent covered: {}, start position: {},{}"
-              .format(e, config.num_episodes, total_reward, episode_covered[e], env.start_row, env.start_col))
+        print("episode: {}/{}, reward: {}, percent covered: {}, start position: {},{}, number of steps: {}, environment: {}"
+              .format(e, config.num_episodes, total_reward, episode_covered[e], env.start_row, env.start_col, t, env.image_num))
 
     plt.plot(average_reward)
     plt.ylabel('Averaged Episode reward')
